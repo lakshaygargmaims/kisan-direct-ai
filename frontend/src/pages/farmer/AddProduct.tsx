@@ -1,0 +1,209 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { api } from '../../services/api';
+import { toast } from 'sonner';
+import { Mic, Save, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Pulses', 'Spices', 'Dairy', 'Processed', 'Other'];
+const GRADES = ['A+', 'A', 'B+', 'B', 'C'];
+
+export default function AddProduct() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    name: '', categoryId: '', pricePerKg: '', availableQuantity: '', minOrderQuantity: '1',
+    qualityGrade: 'A', organicCertified: false, harvestDate: '', shelfLife: '',
+    storageRequirement: '', coldChainRequired: false,
+    deliveryRadius: '50', interstateAllowed: false, maxTransitHours: '24',
+  });
+  const [saving, setSaving] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [parsed, setParsed] = useState<any>(null);
+
+  const update = (field: string, value: any) => setForm({ ...form, [field]: value });
+
+  const handleVoice = () => {
+    setVoiceMode(true);
+    setVoiceText('');
+    setParsed(null);
+    setTimeout(() => {
+      setVoiceText('Mere paas 500 kilo tamatar hai, 28 rupaye kilo mein bechna hai.');
+      setTimeout(() => {
+        setParsed({ name: 'Tomato', quantity: 500, price: 28 });
+        setForm({ ...form, name: 'Tomato', pricePerKg: '28', availableQuantity: '500' });
+      }, 1000);
+    }, 1500);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      // Create the product first
+      const product = await api.createProduct({
+        name: form.name,
+        pricePerKg: Number(form.pricePerKg),
+        availableQuantity: Number(form.availableQuantity),
+        minOrderQuantity: Number(form.minOrderQuantity),
+        qualityGrade: form.qualityGrade,
+        organicCertified: form.organicCertified,
+        harvestDate: form.harvestDate || undefined,
+        shelfLife: form.shelfLife ? Number(form.shelfLife) : undefined,
+        storageRequirement: form.storageRequirement || undefined,
+        coldChainRequired: form.coldChainRequired,
+        categoryId: form.categoryId,
+        deliveryRule: {
+          maxDeliveryRadiusKm: Number(form.deliveryRadius),
+          interstateAllowed: form.interstateAllowed,
+          coldChainRequired: form.coldChainRequired,
+          maximumTransitHours: Number(form.maxTransitHours),
+        },
+      });
+
+      toast.success('Product added!');
+
+      navigate('/farmer/products');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add product');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Link to="/farmer/products" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-green-600">
+        <ArrowLeft className="h-4 w-4" /> {t('common.back')} {t('farmer.products.title')}
+      </Link>
+
+      <div className="bg-white rounded-xl border shadow-sm p-6">
+        <h1 className="text-2xl font-bold mb-6">{t('farmer.products.addProduct')}</h1>
+
+        {/* Voice Input */}
+        <div className="bg-green-50 rounded-xl p-4 mb-6 border border-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-green-800">🎤 {t('farmer.products.voiceAdd')}</h3>
+              <p className="text-sm text-green-600">{t('farmer.products.voicePlaceholder')}</p>
+            </div>
+            <button type="button" onClick={handleVoice}
+              className={`p-3 rounded-full transition ${voiceMode ? 'bg-red-500 text-white animate-pulse' : 'bg-green-600 text-white hover:bg-green-700'}`}>
+              <Mic className="h-5 w-5" />
+            </button>
+          </div>
+          {voiceText && (
+            <div className="mt-3 bg-white rounded-lg p-3 text-sm">
+              <p className="text-gray-500">Heard:</p>
+              <p className="font-medium">"{voiceText}"</p>
+              {parsed && (
+                <div className="mt-2 text-green-700">
+                  <p>✅ {parsed.name} • {parsed.quantity} kg • ₹{parsed.price}/kg</p>
+                  <button type="button" onClick={() => setVoiceMode(false)}
+                    className="text-xs text-green-600 underline mt-1">{t('farmer.products.confirmListing')}</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.productName')} *</label>
+              <input type="text" value={form.name} onChange={e => update('name', e.target.value)} required
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g., Tomato" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.category')} *</label>
+              <select value={form.categoryId} onChange={e => update('categoryId', e.target.value)} required
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                <option value="">Select category</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.pricePerKg')} *</label>
+              <input type="number" value={form.pricePerKg} onChange={e => update('pricePerKg', e.target.value)} required
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.quantity')} *</label>
+              <input type="number" value={form.availableQuantity} onChange={e => update('availableQuantity', e.target.value)} required
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.minOrder')}</label>
+              <input type="number" value={form.minOrderQuantity} onChange={e => update('minOrderQuantity', e.target.value)}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.quality')}</label>
+              <select value={form.qualityGrade} onChange={e => update('qualityGrade', e.target.value)}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.harvestDate')}</label>
+              <input type="date" value={form.harvestDate} onChange={e => update('harvestDate', e.target.value)}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('farmer.products.shelfLife')}</label>
+              <input type="number" value={form.shelfLife} onChange={e => update('shelfLife', e.target.value)}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.organicCertified} onChange={e => update('organicCertified', e.target.checked)}
+                className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+              Organic Certified
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.coldChainRequired} onChange={e => update('coldChainRequired', e.target.checked)}
+                className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+              {t('consumer.productDetail.coldChain')}
+            </label>
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-medium mb-3">{t('nav.deliveryRules')}</h3>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('farmer.products.deliveryRadius')}</label>
+                <input type="number" value={form.deliveryRadius} onChange={e => update('deliveryRadius', e.target.value)}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('consumer.productDetail.estimatedDelivery')}</label>
+                <input type="number" value={form.maxTransitHours} onChange={e => update('maxTransitHours', e.target.value)}
+                  className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500" />
+              </div>
+              <label className="flex items-center gap-2 text-sm pt-6">
+                <input type="checkbox" checked={form.interstateAllowed} onChange={e => update('interstateAllowed', e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                {t('farmer.products.interstate')}
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" disabled={saving}
+            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition flex items-center justify-center gap-2 disabled:opacity-50">
+            <Save className="h-5 w-5" />
+            {saving ? '...' : t('farmer.products.addProduct')}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

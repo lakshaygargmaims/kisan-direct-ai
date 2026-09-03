@@ -1,0 +1,743 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  name        String
+  role        String    @default("CONSUMER")
+  phone       String?
+  isVerified  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  FarmerProfile    FarmerProfile[]
+  FPOProfile       FPOProfile[]
+  ConsumerProfile  ConsumerProfile[]
+  BuyerProfile     BuyerProfile[]
+  LogisticsPartner LogisticsPartner[]
+  products         Product[]
+  orders           Order[]            @relation("buyerOrders")
+  farmerOrders     Order[]            @relation("farmerOrders")
+  reviews          Review[]           @relation("reviewer")
+  farmerReviews    Review[]           @relation("reviewedFarmer")
+  notifications    Notification[]
+  payments         Payment[]
+  favorites        Favorite[]
+  riskScores       RiskScore[]
+  verifications    Verification[]
+  auditLogs        AuditLog[]
+  disputes         Dispute[]          @relation("disputes")
+  expectedHarvests ExpectedHarvest[]  @relation("farmerHarvests")
+  harvestReservations HarvestReservation[] @relation("buyerHarvestReservations")
+  harvestAllocations  HarvestAllocation[]  @relation("buyerHarvestAllocations")
+  harvestMatches   HarvestBuyerMatch[] @relation("buyerHarvestMatches")
+}
+
+model FarmerProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  farmName         String
+  farmSize         String?
+  latitude         Float
+  longitude        Float
+  city             String
+  specializations  String   @default("[]")
+  organicCertified Boolean  @default(false)
+  trustScore       Int      @default(50)
+  totalEarnings    Float    @default(0)
+  completedOrders  Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model FPOProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  fpoName           String
+  registrationNumber String?
+  memberCount       Int      @default(0)
+  latitude          Float
+  longitude         Float
+  city              String
+  specializations   String   @default("[]")
+  trustScore        Int      @default(50)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ConsumerProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  defaultLatitude  Float?
+  defaultLongitude Float?
+  defaultCity      String?
+  defaultAddress   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model BuyerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  businessName String
+  businessType String?
+  latitude     Float
+  longitude    Float
+  city         String
+  address      String?
+  trustScore   Int      @default(50)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model LogisticsPartner {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  companyName  String
+  vehicleTypes String   @default("[]")
+  coverageArea String   @default("[]")
+  isVerified   Boolean  @default(false)
+  rating       Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id])
+  deliveries Delivery[]
+}
+
+model ProductCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String?
+  createdAt DateTime @default(now())
+
+  products            Product[]
+  expectedHarvests    ExpectedHarvest[]
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  pricePerKg        Float
+  unit              String   @default("kg")
+  availableQuantity Float
+  minOrderQuantity  Float    @default(1)
+  qualityGrade      String   @default("A")
+  organicCertified  Boolean  @default(false)
+  harvestDate       DateTime?
+  shelfLife         Int?
+  storageRequirement String?
+  coldChainRequired Boolean  @default(false)
+  avgRating         Float    @default(0)
+  totalSold         Int      @default(0)
+  isActive          Boolean  @default(true)
+  farmerId          String
+  categoryId        String?
+  expectedHarvestDate DateTime?
+  expectedQuantity  Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  farmer       User                 @relation(fields: [farmerId], references: [id])
+  category     ProductCategory?     @relation(fields: [categoryId], references: [id])
+  images       ProductImage[]
+  deliveryRule ProductDeliveryRule?
+  orderItems   OrderItem[]
+  reviews      Review[]
+  cartItems    CartItem[]
+  orders       Order[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  isPrimary Boolean @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductDeliveryRule {
+  id                   String   @id @default(cuid())
+  productId            String   @unique
+  deliveryMode         String   @default("PLATFORM")
+  maxDeliveryRadiusKm  Float    @default(50)
+  interstateAllowed    Boolean  @default(false)
+  coldChainRequired    Boolean  @default(false)
+  maximumTransitHours  Int      @default(24)
+  sameDayRequired      Boolean  @default(false)
+  deliveryConditions   String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model BuyerRequirement {
+  id              String   @id @default(cuid())
+  buyerId         String
+  productName     String
+  quantity        Float
+  quality         String?
+  maxPrice        Float?
+  deliveryCity    String
+  deliveryAddress String
+  requiredByDate  DateTime
+  deliveryWindow  String?
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  offers Offer[]
+}
+
+model Offer {
+  id              String   @id @default(cuid())
+  requirementId   String
+  farmerId        String
+  pricePerKg      Float
+  quantity        Float
+  message         String?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+
+  requirement BuyerRequirement @relation(fields: [requirementId], references: [id])
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Float
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  buyerId          String
+  farmerId         String
+  productId        String
+  quantity         Float
+  pricePerKg       Float
+  totalAmount      Float
+  advanceAmount    Float
+  remainingAmount  Float
+  platformFee      Float
+  deliveryAddress  String
+  deliveryLatitude Float
+  deliveryLongitude Float
+  deliveryNotes    String?
+  status           String   @default("PENDING_ADVANCE")
+  advancePaidAt    DateTime?
+  acceptedAt       DateTime?
+  deliveredAt      DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  buyer        User                 @relation("buyerOrders", fields: [buyerId], references: [id])
+  farmer       User                 @relation("farmerOrders", fields: [farmerId], references: [id])
+  product      Product              @relation(fields: [productId], references: [id])
+  items        OrderItem[]
+  statusHistory OrderStatusHistory[]
+  delivery     Delivery?
+  payments     Payment[]
+  reviews      Review[]
+  club         OrderClubMember?
+  notifications Notification[]
+  disputes     Dispute[]
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Float
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  status    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model OrderClub {
+  id            String   @id @default(cuid())
+  farmerId      String
+  totalQuantity Float
+  vehicleType   String
+  totalDistance Float
+  estimatedTime Int
+  separateCost  Float
+  clubbedCost   Float
+  savings       Float
+  status        String   @default("PROPOSED")
+  createdAt     DateTime @default(now())
+
+  members OrderClubMember[]
+}
+
+model OrderClubMember {
+  id      String @id @default(cuid())
+  clubId  String
+  orderId String @unique
+
+  club  OrderClub @relation(fields: [clubId], references: [id])
+  order Order     @relation(fields: [orderId], references: [id])
+}
+
+model Delivery {
+  id               String    @id @default(cuid())
+  orderId          String    @unique
+  status           String    @default("BOOKED")
+  driverName       String?
+  driverPhone      String?
+  vehicleNumber    String?
+  vehicleType      String?
+  estimatedPickup  DateTime?
+  estimatedArrival DateTime?
+  actualPickup     DateTime?
+  actualArrival    DateTime?
+  routeData        String?
+  partnerId        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  order   Order              @relation(fields: [orderId], references: [id])
+  partner LogisticsPartner?  @relation(fields: [partnerId], references: [id])
+}
+
+model Payment {
+  id               String   @id @default(cuid())
+  orderId          String
+  userId           String
+  amount           Float
+  method           String
+  status           String
+  transactionId    String   @unique
+  providerReference String?
+  platformFee      Float    @default(0)
+  farmerShare      Float    @default(0)
+  logisticsFee     Float    @default(0)
+  createdAt        DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+model CancellationPolicy {
+  id                String   @id @default(cuid())
+  name              String
+  beforeAcceptance  Int      @default(100)
+  afterAcceptance   Int      @default(90)
+  afterPreparation  Int      @default(75)
+  afterLogistics    Int      @default(50)
+  afterPickup       Int      @default(10)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+}
+
+model Dispute {
+  id           String   @id @default(cuid())
+  orderId      String
+  reporterId   String
+  reason       String
+  description  String
+  evidence     String?
+  status       String   @default("PENDING")
+  resolution   String?
+  refundAmount Float?
+  resolvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  order    Order @relation(fields: [orderId], references: [id])
+  reporter User  @relation("disputes", fields: [reporterId], references: [id])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String?
+  reviewerId  String
+  farmerId    String
+  rating      Int
+  comment     String?
+  reviewType  String   @default("BUYER_TO_FARMER")
+  createdAt   DateTime @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id])
+  reviewer User     @relation("reviewer", fields: [reviewerId], references: [id])
+  farmer   User     @relation("reviewedFarmer", fields: [farmerId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  data      String?
+  orderId   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  farmerId  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, farmerId])
+}
+
+model PriceHistory {
+  id          String   @id @default(cuid())
+  productId   String
+  price       Float
+  location    String?
+  recordedAt  DateTime @default(now())
+}
+
+model MarketPrice {
+  id          String   @id @default(cuid())
+  product     String
+  location    String
+  avgPrice    Float
+  minPrice    Float
+  maxPrice    Float
+  date        DateTime @default(now())
+}
+
+model DemandForecast {
+  id         String   @id @default(cuid())
+  product    String
+  region     String
+  forecast   String
+  demandLevel String
+  expectedPriceChange Float
+  timeframe  String
+  createdAt  DateTime @default(now())
+}
+
+model PricePrediction {
+  id            String   @id @default(cuid())
+  productId     String
+  predictedPrice Float
+  confidence    Float
+  trend         String
+  timeframe     String
+  createdAt     DateTime @default(now())
+}
+
+model QualityAssessment {
+  id           String   @id @default(cuid())
+  productId    String
+  grade        String
+  confidence   Float
+  defects      String   @default("[]")
+  freshness    Float
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+}
+
+model CollectionHub {
+  id          String   @id @default(cuid())
+  name        String
+  latitude    Float
+  longitude   Float
+  city        String
+  address     String?
+  capacity    Int      @default(1000)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Crate {
+  id           String   @id @default(cuid())
+  farmerId     String
+  issuedCount  Int      @default(0)
+  deliveredCount Int    @default(0)
+  returnedCount Int     @default(0)
+  pendingReturn Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RiskScore {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int
+  factors   String   @default("[]")
+  riskLevel String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Verification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  status    String   @default("PENDING")
+  document  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+// ─── AI Demand Heatmap Models ──────────────────────────────────
+
+model DemandZone {
+  id            String   @id @default(cuid())
+  name          String
+  areaName      String
+  latitude      Float
+  longitude     Float
+  radiusKm      Float    @default(10)
+  demandLevel   String   @default("MEDIUM") // HIGH, MEDIUM, LOW
+  demandScore   Int      @default(50)        // 0-100
+  activeBuyers  Int      @default(0)
+  b2bRequirements Int    @default(0)
+  avgOfferedPrice Float?
+  totalDemandKg Float    @default(0)
+  city          String   @default("Delhi")
+  isActive      Boolean  @default(true)
+  calculatedAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  productDemands ProductDemand[]
+  snapshots     DemandSnapshot[]
+}
+
+model ProductDemand {
+  id            String   @id @default(cuid())
+  zoneId        String
+  productName   String
+  categoryId    String?
+  demandLevel   String   @default("MEDIUM")
+  demandScore   Int      @default(50)
+  estimatedDemandKg Float @default(0)
+  recentOrderCount Int  @default(0)
+  activeBuyerCount  Int  @default(0)
+  b2bReqCount       Int  @default(0)
+  avgPricePerKg     Float?
+  seasonalFactor    Float  @default(1.0)
+  calculatedAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  zone DemandZone @relation(fields: [zoneId], references: [id])
+}
+
+model DemandSnapshot {
+  id            String   @id @default(cuid())
+  zoneId        String
+  productName   String
+  demandScore   Int
+  demandLevel   String
+  totalDemandKg Float
+  orderCount    Int
+  buyerCount    Int
+  avgPrice      Float?
+  snapshotDate  DateTime @default(now())
+
+  zone DemandZone @relation(fields: [zoneId], references: [id])
+}
+
+// ─── Harvest Reserve Models ────────────────────────────────────
+
+model ExpectedHarvest {
+  id                    String   @id @default(cuid())
+  farmerId              String
+  productName           String
+  description           String?
+  categoryId            String?
+  expectedHarvestDate   DateTime
+  expectedQuantity      Float
+  unit                  String   @default("kg")
+  qualityGrade          String   @default("A")
+  expectedPricePerUnit  Float
+  minBookingQuantity    Float    @default(1)
+  maxBookingPerBuyer    Float?
+  farmLatitude          Float
+  farmLongitude         Float
+  farmAddress           String?
+  deliveryRadiusKm      Float    @default(50)
+  deliveryType          String   @default("LOCAL") // LOCAL, INTERSTATE, PICKUP
+  coldChainRequired     Boolean  @default(false)
+  advanceBookingEnabled Boolean  @default(true)
+  advancePercentage     Int      @default(20)
+  bookingOpenDate       DateTime?
+  bookingCloseDate      DateTime?
+  totalReservedQuantity Float    @default(0)
+  actualHarvestedQuantity Float?
+  actualQualityGrade    String?
+  status                String   @default("BOOKING_OPEN") // BOOKING_OPEN, BOOKING_CLOSED, HARVEST_PENDING, HARVEST_CONFIRMED, DELAYED, COMPLETED, CANCELLED
+  notes                 String?
+  delayReason           String?
+  newExpectedDate       DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  farmer        User                  @relation("farmerHarvests", fields: [farmerId], references: [id])
+  category      ProductCategory?      @relation(fields: [categoryId], references: [id])
+  images        ExpectedHarvestImage[]
+  reservations  HarvestReservation[]
+  allocations   HarvestAllocation[]
+  delays        HarvestDelay[]
+  matches       HarvestBuyerMatch[]
+}
+
+model ExpectedHarvestImage {
+  id          String  @id @default(cuid())
+  harvestId   String
+  url         String
+  isPrimary   Boolean @default(false)
+
+  harvest ExpectedHarvest @relation(fields: [harvestId], references: [id], onDelete: Cascade)
+}
+
+model HarvestReservation {
+  id                 String   @id @default(cuid())
+  harvestId          String
+  buyerId            String
+  quantity           Float
+  pricePerUnit       Float
+  advancePercentage  Int
+  advanceAmount      Float
+  totalValue         Float
+  deliveryAddress    String
+  deliveryLatitude   Float
+  deliveryLongitude  Float
+  estimatedDeliveryKm Float?
+  deliveryCharge     Float?
+  adjustedQuantity   Float?
+  adjustedAdvance    Float?
+  adjustedTotalValue Float?
+  refundAmount       Float?   @default(0)
+  status             String   @default("CONFIRMED") // CONFIRMED, ADJUSTED, FULFILLED, CANCELLED, REFUNDED
+  advancePaymentStatus String @default("PAID") // PAID, PENDING, REFUNDED, PARTIALLY_REFUNDED
+  finalPaymentStatus String   @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  acknowledged       Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  harvest     ExpectedHarvest    @relation(fields: [harvestId], references: [id])
+  buyer       User             @relation("buyerHarvestReservations", fields: [buyerId], references: [id])
+  payments    HarvestPayment[]
+  allocations HarvestAllocation[]
+}
+
+model HarvestAllocation {
+  id               String   @id @default(cuid())
+  harvestId        String
+  reservationId    String?
+  buyerId          String
+  expectedQuantity Float
+  adjustedQuantity Float
+  allocationType   String   @default("PROPORTIONAL") // FIRST_COME, PROPORTIONAL, FARMER_MANAGED
+  reason           String?
+  createdAt        DateTime @default(now())
+
+  harvest     ExpectedHarvest    @relation(fields: [harvestId], references: [id])
+  reservation HarvestReservation? @relation(fields: [reservationId], references: [id])
+  buyer       User               @relation("buyerHarvestAllocations", fields: [buyerId], references: [id])
+}
+
+model HarvestDelay {
+  id              String   @id @default(cuid())
+  harvestId       String
+  originalDate    DateTime
+  newDate         DateTime
+  reason          String
+  reasonType      String   @default("OTHER") // WEATHER, CROP_CONDITION, OPERATIONAL, OTHER
+  createdAt       DateTime @default(now())
+
+  harvest ExpectedHarvest @relation(fields: [harvestId], references: [id])
+}
+
+model HarvestBuyerMatch {
+  id              String   @id @default(cuid())
+  harvestId       String
+  buyerId         String
+  matchScore      Int      @default(0)
+  matchReasons    String   @default("[]")
+  status          String   @default("SUGGESTED") // SUGGESTED, NOTIFIED, INTERESTED, DECLINED, BOOKED
+  createdAt       DateTime @default(now())
+
+  harvest ExpectedHarvest @relation(fields: [harvestId], references: [id])
+  buyer   User            @relation("buyerHarvestMatches", fields: [buyerId], references: [id])
+}
+
+model HarvestPayment {
+  id              String   @id @default(cuid())
+  reservationId   String
+  amount          Float
+  type            String   // ADVANCE, FINAL, REFUND
+  method          String
+  status          String   @default("COMPLETED")
+  transactionId   String   @unique
+  createdAt       DateTime @default(now())
+
+  reservation HarvestReservation @relation(fields: [reservationId], references: [id])
+}
+
+
