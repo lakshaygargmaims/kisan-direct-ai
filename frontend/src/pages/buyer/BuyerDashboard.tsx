@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, ClipboardList, TrendingUp, DollarSign, Search, MapPin } from 'lucide-react';
+import { useAuthStore } from '../../store/auth';
 
 export default function BuyerDashboard() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t('buyer.dashboard.welcome', { name: '' })} 🏪</h1>
+        <h1 className="text-2xl font-bold">{t('buyer.dashboard.welcome', { name: user?.name || '' })} 🏪</h1>
         <p className="text-gray-500">{t('buyer.dashboard.subtitle')}</p>
       </div>
 
