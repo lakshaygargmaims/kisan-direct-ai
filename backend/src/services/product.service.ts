@@ -186,57 +186,6 @@ export class ProductService {
     });
   }
 
-  async uploadImages(productId: string, farmerId: string, files: Express.Multer.File[]) {
-    const existing = await prisma.product.findFirst({ where: { id: productId, farmerId } });
-    if (!existing) throw new Error('Product not found or unauthorized');
-
-    // Get current image count to determine if first image should be primary
-    const currentImageCount = await prisma.productImage.count({ where: { productId } });
-
-    const images = await Promise.all(
-      files.map((file, index) =>
-        prisma.productImage.create({
-          data: {
-            productId,
-            url: `/uploads/products/${file.filename}`,
-            isPrimary: currentImageCount === 0 && index === 0,
-          },
-        })
-      )
-    );
-
-    return images;
-  }
-
-  async deleteImage(imageId: string, farmerId: string) {
-    const image = await prisma.productImage.findUnique({
-      where: { id: imageId },
-      include: { product: true },
-    });
-
-    if (!image || image.product.farmerId !== farmerId) {
-      throw new Error('Image not found or unauthorized');
-    }
-
-    await prisma.productImage.delete({ where: { id: imageId } });
-
-    // If deleted image was primary, make the next image primary
-    if (image.isPrimary) {
-      const nextImage = await prisma.productImage.findFirst({
-        where: { productId: image.productId },
-        orderBy: { id: 'asc' },
-      });
-      if (nextImage) {
-        await prisma.productImage.update({
-          where: { id: nextImage.id },
-          data: { isPrimary: true },
-        });
-      }
-    }
-
-    return { success: true };
-  }
-
   private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;

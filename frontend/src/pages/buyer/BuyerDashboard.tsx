@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Package, ClipboardList, TrendingUp, DollarSign, Search, MapPin } from 'lucide-react';
+import { Package, TrendingUp, DollarSign, MapPin } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 
 export default function BuyerDashboard() {

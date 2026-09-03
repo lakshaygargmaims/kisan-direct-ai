@@ -61,29 +61,6 @@ export class ProductController {
       res.status(400).json({ success: false, error: error.message });
     }
   }
-
-  async uploadImages(req: AuthRequest, res: Response) {
-    try {
-      const files = req.files as Express.Multer.File[];
-      if (!files || files.length === 0) {
-        res.status(400).json({ success: false, error: 'No images provided' });
-        return;
-      }
-      const images = await productService.uploadImages(req.params.id, req.user!.userId, files);
-      res.json({ success: true, data: images });
-    } catch (error: any) {
-      res.status(400).json({ success: false, error: error.message });
-    }
-  }
-
-  async deleteImage(req: AuthRequest, res: Response) {
-    try {
-      await productService.deleteImage(req.params.imageId, req.user!.userId);
-      res.json({ success: true, message: 'Image deleted' });
-    } catch (error: any) {
-      res.status(400).json({ success: false, error: error.message });
-    }
-  }
 }
 
 export const productController = new ProductController();

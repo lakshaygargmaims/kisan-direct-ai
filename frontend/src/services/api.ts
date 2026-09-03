@@ -21,25 +21,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok && res.status === 0) throw new Error('Cannot connect to server');
   const data = await safeJson(res);
-  if (!data.success) throw new Error(data.error || 'Request failed');
-  return data.data;
-}
-
-async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
-  const token = getToken();
-  const headers: Record<string, string> = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-  // Don't set Content-Type for FormData - browser sets it with boundary
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
-  if (!res.ok && res.status === 0) throw new Error('Cannot connect to server');
-  const data = await safeJson(res);
-  if (!data.success) throw new Error(data.error || 'Upload failed');
-  return data.data;
+  if (!data.success) throw new Error(data.error || 'Request failed');  return data.data;
 }
 
 export const api = {
@@ -53,14 +35,7 @@ export const api = {
   getProduct: (id: string) => request<any>(`/products/${id}`),
   createProduct: (data: any) => request<any>('/products', { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id: string, data: any) => request<any>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  uploadProductImages: (productId: string, files: File[]) => {
-    const formData = new FormData();
-    files.forEach(file => formData.append('images', file));
-    return uploadRequest<any[]>(`/products/${productId}/images`, formData);
-  },
   deleteProduct: (id: string) => request<any>(`/products/${id}`, { method: 'DELETE' }),
-  deleteProductImage: (productId: string, imageId: string) =>
-    request<any>(`/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
 
   // Orders
   createOrder: (data: any) => request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),

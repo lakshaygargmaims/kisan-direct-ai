@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import path from 'path';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
@@ -38,9 +37,6 @@ app.use(cors({ origin: (origin, callback) => {
 }, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Static file serving for uploads
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
