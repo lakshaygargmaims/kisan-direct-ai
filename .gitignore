@@ -48,3 +48,5 @@ uploads/
 # Coverage
 coverage/
 .nyc_output/
+test-*.js
+seed-images.mjs
