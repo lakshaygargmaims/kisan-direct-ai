@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -202,21 +202,30 @@ export default function MapView({ markers, route, center, zoom = 11, className =
     }
   }, [route]);
 
+  const [legendOpen, setLegendOpen] = useState(true);
+
   return (
     <div className={`relative ${className}`} style={{ height: '100%', minHeight: '300px' }}>
       <div ref={mapContainer} className="w-full h-full rounded-xl" style={{ height: '100%' }} />
-      {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-white rounded-lg shadow-md px-3 py-2 text-xs space-y-1 z-10">
-        <p className="font-semibold mb-1">Map Legend</p>
-        {['farmer', 'buyer', 'hub'].map(type => {
-          const c = MARKER_COLORS[type];
-          return (
-            <div key={type} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ background: c.bg }} />
-              <span className="capitalize">{type}</span>
-            </div>
-          );
-        })}
+      {/* Legend — collapsible */}
+      <div className="absolute bottom-3 left-3 bg-white rounded-lg shadow-md border z-20 transition-all">
+        <button onClick={() => setLegendOpen(!legendOpen)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-gray-50 rounded-lg text-xs">
+          <span className="font-semibold">Map Legend</span>
+          <span className="text-gray-400 text-xs">{legendOpen ? '▼' : '▲'}</span>
+        </button>
+        {legendOpen && (
+          <div className="px-3 pb-2 space-y-1 text-xs">
+            {['farmer', 'buyer', 'hub'].map(type => {
+              const c = MARKER_COLORS[type];
+              return (
+                <div key={type} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ background: c.bg }} />
+                  <span className="capitalize">{type}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

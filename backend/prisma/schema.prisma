@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -40,6 +40,13 @@ model User {
   harvestReservations HarvestReservation[] @relation("buyerHarvestReservations")
   harvestAllocations  HarvestAllocation[]  @relation("buyerHarvestAllocations")
   harvestMatches   HarvestBuyerMatch[] @relation("buyerHarvestMatches")
+  globalBuyerProfile   GlobalBuyerProfile?
+  globalProducts       GlobalProductListing[]
+  exportReadiness      ExportReadinessProfile?
+  exportRfqMatches     ExportSupplierMatch[]
+  aggregationSuppliers SupplyAggregationSupplier[]
+  exportOffers         ExportOffer[]
+  exportDocuments      ExportDocument[]
 }
 
 model FarmerProfile {
@@ -741,3 +748,302 @@ model HarvestPayment {
 }
 
 
+
+// ═══════════════════════════════════════════
+// GLOBAL BULK EXPORT MODELS
+// ═══════════════════════════════════════════
+
+model GlobalBuyerProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  companyName      String
+  country          String
+  city             String?
+  portOrAirport    String?
+  buyerType        String   @default("IMPORTER")
+  importLicense    String?
+  tradeExperience  String?
+  preferredProducts String?
+  annualVolume     String?
+  verificationStatus String @default("BASIC_PROFILE")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User       @relation(fields: [userId], references: [id])
+  rfqs   ExportRFQ[]
+  offers ExportOffer[]
+}
+
+model GlobalProductListing {
+  id                String   @id @default(cuid())
+  farmerId          String
+  productName       String
+  category          String
+  description       String?
+  originState       String
+  countryOfOrigin   String   @default("India")
+  availableQuantity Float
+  unit              String   @default("kg")
+  moq               Float
+  maxSupplyCapacity Float?
+  availableDate     String?
+  harvestDate       String?
+  upcomingHarvest   Boolean  @default(false)
+  advanceBooking    Boolean  @default(false)
+  qualityGrade      String   @default("A")
+  expectedPrice     Float
+  currency          String   @default("INR")
+  packagingOptions  String?
+  shelfLife         String?
+  storageRequirement String?
+  coldChainRequired Boolean  @default(false)
+  domesticDelivery  Boolean  @default(true)
+  exportStatus      String   @default("LOCAL_ONLY")
+  certifications    String?
+  importantNotes    String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user         User               @relation(fields: [farmerId], references: [id])
+  eligibility  ExportEligibility[]
+  rfqItems     ExportRFQItem[]
+  matches      ExportSupplierMatch[]
+  aggregations SupplyAggregationSupplier[]
+}
+
+model ExportEligibility {
+  id           String   @id @default(cuid())
+  productId    String
+  destination  String
+  status       String
+  feasible     Boolean
+  reasons      String?
+  requirements String?
+  createdAt    DateTime @default(now())
+
+  product GlobalProductListing @relation(fields: [productId], references: [id])
+}
+
+model ExportReadinessProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  exportExperience     String?
+  annualCapacity       String?
+  packagingCapability  String?
+  storageCapability    String?
+  coldChainAvailable   Boolean  @default(false)
+  qualityInfo          String?
+  certifications       String?
+  readinessStatus      String   @default("BASIC_PROFILE")
+  preferredMarkets     String?
+  previousBulkOrders   Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ExportRFQ {
+  id                   String   @id @default(cuid())
+  buyerId              String
+  productRequired      String
+  requiredQuantity     Float
+  unit                 String   @default("kg")
+  destinationCountry   String
+  destinationCity      String?
+  destinationPort      String?
+  deliveryTimeline     String?
+  qualityRequirements  String?
+  packagingRequirements String?
+  coldChainRequired    Boolean  @default(false)
+  targetPrice          Float?
+  preferredCurrency    String   @default("USD")
+  additionalNotes      String?
+  status               String   @default("SUBMITTED")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  buyer        GlobalBuyerProfile     @relation(fields: [buyerId], references: [id])
+  items        ExportRFQItem[]
+  matches      ExportSupplierMatch[]
+  aggregations SupplyAggregation[]
+  offers       ExportOffer[]
+  shipping     ShippingEstimate[]
+  shipments    ExportShipment[]
+  documents    ExportDocument[]
+}
+
+model ExportRFQItem {
+  id              String   @id @default(cuid())
+  rfqId           String
+  productId       String?
+  productName     String
+  quantity        Float
+  unit            String   @default("kg")
+  qualityGrade    String?
+  specialReqs     String?
+
+  rfq    ExportRFQ              @relation(fields: [rfqId], references: [id])
+  product GlobalProductListing? @relation(fields: [productId], references: [id])
+}
+
+model ExportSupplierMatch {
+  id              String   @id @default(cuid())
+  rfqId           String
+  productId       String?
+  farmerId        String
+  matchScore      Float
+  productScore    Float   @default(0)
+  quantityScore   Float   @default(0)
+  qualityScore    Float   @default(0)
+  timelineScore   Float   @default(0)
+  readinessScore  Float   @default(0)
+  locationScore   Float   @default(0)
+  reliabilityScore Float  @default(0)
+  status          String  @default("PENDING")
+  createdAt       DateTime @default(now())
+
+  rfq     ExportRFQ              @relation(fields: [rfqId], references: [id])
+  product GlobalProductListing? @relation(fields: [productId], references: [id])
+  user    User                  @relation(fields: [farmerId], references: [id])
+}
+
+model SupplyAggregation {
+  id              String   @id @default(cuid())
+  rfqId           String
+  totalRequired   Float
+  totalAvailable  Float
+  matchPercentage Float
+  status          String   @default("PROPOSED")
+  consolidationHub String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rfq       ExportRFQ                    @relation(fields: [rfqId], references: [id])
+  suppliers SupplyAggregationSupplier[]
+}
+
+model SupplyAggregationSupplier {
+  id              String   @id @default(cuid())
+  aggregationId   String
+  farmerId        String
+  productId       String?
+  quantity        Float
+  quality         String?
+  location        String?
+  exportReadiness String?
+  status          String   @default("PROPOSED")
+
+  aggregation SupplyAggregation    @relation(fields: [aggregationId], references: [id])
+  user       User                 @relation(fields: [farmerId], references: [id])
+  product    GlobalProductListing? @relation(fields: [productId], references: [id])
+}
+
+model ExportOffer {
+  id              String   @id @default(cuid())
+  rfqId           String
+  buyerId         String
+  farmerId        String
+  offeredPrice    Float
+  currency        String   @default("USD")
+  quantity        Float
+  deliveryTerms   String?
+  packaging       String?
+  deliveryTimeline String?
+  paymentTerms    String?
+  validityDays    Int      @default(30)
+  notes           String?
+  status          String   @default("SUBMITTED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rfq   ExportRFQ          @relation(fields: [rfqId], references: [id])
+  buyer GlobalBuyerProfile @relation(fields: [buyerId], references: [id])
+  user  User               @relation(fields: [farmerId], references: [id])
+}
+
+model ShippingEstimate {
+  id              String   @id @default(cuid())
+  rfqId           String
+  shippingMethod  String
+  productValue    Float
+  packagingCost   Float
+  inlandTransport Float
+  handlingCost    Float
+  freightCost     Float
+  insuranceCost   Float
+  documentationCost Float @default(0)
+  totalEstimate   Float
+  currency        String   @default("USD")
+  transitDays     String?
+  dataSource      String   @default("DEMO_SIMULATED")
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  rfq ExportRFQ @relation(fields: [rfqId], references: [id])
+}
+
+model ExportShipment {
+  id              String   @id @default(cuid())
+  rfqId           String
+  offerId         String?
+  aggregationId   String?
+  status          String   @default("CREATED")
+  shippingMethod  String?
+  trackingNumber  String?
+  estimatedDeparture String?
+  estimatedArrival String?
+  actualDeparture String?
+  actualArrival   String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rfq          ExportRFQ              @relation(fields: [rfqId], references: [id])
+  statusHistory ExportShipmentStatus[]
+}
+
+model ExportShipmentStatus {
+  id          String   @id @default(cuid())
+  shipmentId  String
+  status      String
+  notes       String?
+  timestamp   DateTime @default(now())
+
+  shipment ExportShipment @relation(fields: [shipmentId], references: [id])
+}
+
+model ExportDocumentRequirement {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  applicableProduct String?
+  applicableCountry String?
+  required    Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  documents ExportDocument[]
+}
+
+model ExportDocument {
+  id            String   @id @default(cuid())
+  requirementId String
+  rfqId         String?
+  farmerId      String?
+  fileName      String?
+  fileUrl       String?
+  status        String   @default("NOT_UPLOADED")
+  notes         String?
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requirement ExportDocumentRequirement @relation(fields: [requirementId], references: [id])
+  rfq         ExportRFQ?                @relation(fields: [rfqId], references: [id])
+  user        User?                     @relation(fields: [farmerId], references: [id])
+}

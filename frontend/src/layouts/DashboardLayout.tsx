@@ -4,7 +4,7 @@ import { useSocketContext } from '../hooks/useSocket';
 import {
   Sprout, LayoutDashboard, ShoppingCart, Package, Map, Bell, LogOut, Menu, X,
   BarChart3, Users, AlertTriangle, Settings, Truck, MapPin, DollarSign,
-  ClipboardList, TrendingUp, Target, Search, ChevronDown
+  ClipboardList, TrendingUp, Target, Search, ChevronDown, Globe, FileText
 } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.upcomingHarvests', path: '/consumer/upcoming-harvests', icon: Sprout },
     { labelKey: 'nav.orders', path: '/consumer/orders', icon: Package },
     { labelKey: 'nav.cart', path: '/consumer/cart', icon: ShoppingCart },
+    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
   ],
   FARMER: [
     { labelKey: 'nav.dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
@@ -30,6 +31,7 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.analytics', path: '/farmer/analytics', icon: BarChart3 },
     { labelKey: 'nav.demandMap', path: '/farmer/demand-map', icon: Map },
     { labelKey: 'nav.upcomingHarvests', path: '/farmer/harvests', icon: Sprout },
+    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
   ],
   FPO: [
     { labelKey: 'nav.dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
@@ -38,6 +40,7 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.orders', path: '/farmer/orders', icon: ClipboardList },
     { labelKey: 'nav.clubbing', path: '/farmer/clubbing', icon: TrendingUp },
     { labelKey: 'nav.analytics', path: '/farmer/analytics', icon: BarChart3 },
+    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
   ],
   B2B_BUYER: [
     { labelKey: 'nav.dashboard', path: '/buyer/dashboard', icon: LayoutDashboard },
@@ -57,6 +60,8 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.disputes', path: '/admin/disputes', icon: AlertTriangle },
     { labelKey: 'nav.analytics', path: '/admin/analytics', icon: BarChart3 },
     { labelKey: 'nav.map', path: '/admin/supply-demand', icon: Map },
+    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
+    { labelKey: 'nav.globalRFQs', path: '/global/rfqs', icon: FileText },
   ],
 };
 

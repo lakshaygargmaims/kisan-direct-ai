@@ -271,20 +271,83 @@ The application supports this complete workflow:
 
 ---
 
+## Deployment
+
+### Quick Start (Local)
+
+```bash
+# 1. Install dependencies
+npm install
+cd frontend && npm install && cd ../backend && npm install && cd ..
+
+# 2. Setup database
+cd backend
+npx prisma generate
+npx prisma db push
+npm run db:seed
+
+# 3. Start servers (in separate terminals)
+# Terminal 1: Backend
+npm run dev
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+### Deploy to Vercel + Railway (Free)
+
+**Frontend (Vercel):**
+1. Push to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new)
+3. Import repo → Set **Root Directory** = `frontend`, **Build Command** = `npm run build`, **Output** = `dist`
+4. Deploy → Copy URL
+
+**Backend (Railway):**
+1. Go to [railway.app](https://railway.app)
+2. New Project → Deploy from GitHub → Set **Root Directory** = `backend`
+3. Add PostgreSQL database (Railway provides this free)
+4. Add env vars:
+   - `DATABASE_URL` = (auto-filled from PostgreSQL plugin)
+   - `JWT_SECRET` = your-secret-key
+   - `FRONTEND_URL` = your-vercel-url
+   - `NODE_ENV` = production
+5. Deploy → Copy URL
+
+**Connect them:**
+Update `frontend/vercel.json` with your Railway backend URL in the rewrites section, then redeploy frontend.
+
+### Deploy with Docker
+
+```bash
+# Backend
+cd backend
+docker build -t kisan-backend .
+docker run -p 3001:3001 -e DATABASE_URL=postgresql://... kisan-backend
+```
+
+### Demo Accounts (password: demo123)
+
+| Role | Email |
+|------|-------|
+| Consumer | consumer@demo.com |
+| Farmer | farmer@demo.com |
+| B2B Buyer | buyer@demo.com |
+| FPO | fpo@demo.com |
+| Admin | admin@demo.com |
+| Logistics | logistics@demo.com |
+
+---
+
 ## Future Improvements
 
-- [ ] Real Mapbox/Google Maps integration
+- [x] Multi-language support (22 Indian languages)
+- [x] WebSocket real-time updates
+- [x] MapLibre GL JS maps with real tiles
+- [x] AI Demand Heatmap
+- [x] Global Bulk Export module
 - [ ] Razorpay/UPI payment gateway
 - [ ] Porter/Dunzo logistics API
-- [ ] Supabase/S3 file storage
-- [ ] Email/SMS/WhatsApp notifications
-- [ ] Voice input with Whisper API
-- [ ] Computer vision quality assessment
-- [ ] Advanced ML models (Prophet, XGBoost)
-- [ ] Multi-language support (Hindi, Tamil, etc.)
 - [ ] Mobile app (React Native)
-- [ ] WebSocket real-time updates
-- [ ] Agricultural data API integration
 
 ---
 

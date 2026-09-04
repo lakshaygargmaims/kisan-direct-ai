@@ -52,6 +52,13 @@ import Disputes from './pages/admin/Disputes';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import SupplyDemandMap from './pages/admin/SupplyDemandMap';
 
+// Global Trade pages
+import GlobalMarketplace from './pages/global/GlobalMarketplace';
+import CreateRFQ from './pages/global/CreateRFQ';
+import GlobalRFQList from './pages/global/GlobalRFQList';
+import GlobalRFQDetail from './pages/global/GlobalRFQDetail';
+import GlobalTradeMap from './pages/global/GlobalTradeMap';
+
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, token, isLoading } = useAuthStore();
 
@@ -136,6 +143,16 @@ export default function App() {
         <Route path="disputes" element={<Disputes />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="supply-demand" element={<SupplyDemandMap />} />
+      </Route>
+
+      {/* Global Trade */}
+      <Route path="/global" element={<PublicLayout />}>
+        <Route path="marketplace" element={<GlobalMarketplace />} />
+        <Route path="products/:id" element={<GlobalMarketplace />} />
+        <Route path="rfq/new" element={<CreateRFQ />} />
+        <Route path="rfqs" element={<GlobalRFQList />} />
+        <Route path="rfq/:id" element={<GlobalRFQDetail />} />
+        <Route path="map" element={<GlobalTradeMap />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

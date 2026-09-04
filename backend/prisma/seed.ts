@@ -338,6 +338,14 @@ async function seed() {
 
   // ─── Clean all tables ──────────────────────────────────────────
   const tables = [
+    // Global Trade (must be before User)
+    'exportDocument', 'exportDocumentRequirement',
+    'exportShipmentStatus', 'exportShipment', 'shippingEstimate',
+    'exportOffer', 'supplyAggregationSupplier', 'supplyAggregation',
+    'exportSupplierMatch', 'exportRFQItem', 'exportRFQ',
+    'exportEligibility', 'exportReadinessProfile', 'globalProductListing',
+    'globalBuyerProfile',
+    // Core
     'HarvestPayment', 'HarvestAllocation', 'HarvestDelay', 'HarvestBuyerMatch',
     'HarvestReservation', 'ExpectedHarvestImage', 'ExpectedHarvest',
     'AuditLog', 'Verification', 'RiskScore', 'QualityAssessment',
@@ -902,6 +910,290 @@ async function seed() {
     });
   }
   console.log('  ✅ 15 risk scores');
+
+  // ═══ GLOBAL TRADE SEED DATA ═══════════════════════════════════
+  console.log('\n🌐 Seeding Global Trade data...');
+
+  // ─── International Buyers ──────────────────────────────────────
+  const intlBuyerData = [
+    { email: 'globalbuyer1@demo.com', name: 'Ahmed Al-Rashid', company: 'Al-Rashid Trading LLC', country: 'UAE', city: 'Dubai', port: 'Jebel Ali Port', type: 'IMPORTER', volume: '500+ MT/year' },
+    { email: 'globalbuyer2@demo.com', name: 'Klaus Mueller', company: 'Mueller Agrar GmbH', country: 'Germany', city: 'Hamburg', port: 'Hamburg Port', type: 'IMPORTER', volume: '200+ MT/year' },
+    { email: 'globalbuyer3@demo.com', name: 'Sarah Johnson', company: 'GreenLeaf Imports Ltd', country: 'United Kingdom', city: 'London', port: 'Felixstowe Port', type: 'IMPORTER', volume: '300+ MT/year' },
+    { email: 'globalbuyer4@demo.com', name: 'Takeshi Yamamoto', company: 'AsiaFresh Corp', country: 'Japan', city: 'Tokyo', port: 'Tokyo Port', type: 'IMPORTER', volume: '150+ MT/year' },
+    { email: 'globalbuyer5@demo.com', name: 'Fatima Al-Zahra', company: 'Gulf Spice Trading', country: 'Saudi Arabia', city: 'Jeddah', port: 'Jeddah Islamic Port', type: 'DISTRIBUTOR', volume: '400+ MT/year' },
+    { email: 'globalbuyer6@demo.com', name: 'Pierre Dubois', company: 'French Agri Imports', country: 'France', city: 'Marseille', port: 'Port of Marseille', type: 'IMPORTER', volume: '250+ MT/year' },
+    { email: 'globalbuyer7@demo.com', name: 'Mike Thompson', company: 'Pacific Harvest Trading', country: 'Australia', city: 'Sydney', port: 'Port Botany', type: 'IMPORTER', volume: '180+ MT/year' },
+    { email: 'globalbuyer8@demo.com', name: 'Li Wei', company: 'Dragon Bridge Imports', country: 'China', city: 'Shanghai', port: 'Shanghai Port', type: 'IMPORTER', volume: '600+ MT/year' },
+    { email: 'globalbuyer9@demo.com', name: 'Maria Garcia', company: 'Iberia Foods SA', country: 'Spain', city: 'Barcelona', port: 'Port of Barcelona', type: 'IMPORTER', volume: '200+ MT/year' },
+    { email: 'globalbuyer10@demo.com', name: 'David Kim', company: 'Seoul Fresh Imports', country: 'South Korea', city: 'Busan', port: 'Busan Port', type: 'IMPORTER', volume: '120+ MT/year' },
+  ];
+
+  const globalUserIds: string[] = [];
+  for (const b of intlBuyerData) {
+    const u = await prisma.user.create({
+      data: { email: b.email, password: PW, name: b.name, role: 'CONSUMER', phone: `+${rand(1, 99)}${rand(100000000, 999999999)}` },
+    });
+    globalUserIds.push(u.id);
+    await prisma.globalBuyerProfile.create({
+      data: {
+        userId: u.id, companyName: b.company, country: b.country, city: b.city,
+        portOrAirport: b.port, buyerType: b.type, annualVolume: b.volume,
+        tradeExperience: pick(['5+ years', '10+ years', '3+ years', '7+ years']),
+        preferredProducts: pick(['Spices, Grains', 'Rice, Pulses', 'Fruits, Vegetables', 'Turmeric, Chili, Cumin']),
+        verificationStatus: pick(['VERIFIED_FOR_PLATFORM', 'DOCUMENTS_SUBMITTED', 'BASIC_PROFILE']),
+      },
+    });
+  }
+  console.log(`  ✅ ${intlBuyerData.length} international buyer profiles`);
+
+  // ─── Export Readiness Profiles for Farmers ──────────────────────
+  for (const fid of farmerIds.slice(0, 8)) {
+    await prisma.exportReadinessProfile.create({
+      data: {
+        userId: fid,
+        exportExperience: pick(['None - First time', '1-2 bulk orders', 'Domestic only', '3+ international orders']),
+        annualCapacity: `${rand(50, 500)} MT`,
+        packagingCapability: pick(['Standard bags (25/50 kg)', 'Custom packaging available', 'Bulk loose + bags', 'Retail + bulk packaging']),
+        storageCapability: pick(['Warehouse on-farm', 'Rented cold storage', 'Open storage', 'Silo storage']),
+        coldChainAvailable: Math.random() > 0.5,
+        qualityInfo: pick(['A Grade, Graded + Packed', 'A/B Grade, Lab tested', 'Premium Organic, Certified', 'Standard quality, Washed + Sorted']),
+        certifications: pick(['FSSAI, Organic India', 'FSSAI, APEDA', 'FSSAI, phytosanitary ready', 'None - pending application']),
+        readinessStatus: pick(['VERIFIED_FOR_PLATFORM', 'DOCUMENTS_SUBMITTED', 'UNDER_REVIEW', 'BASIC_PROFILE']),
+        preferredMarkets: pick(['UAE, Saudi Arabia', 'EU countries', 'Southeast Asia', 'Global - all markets']),
+        previousBulkOrders: rand(0, 15),
+      },
+    });
+  }
+  console.log('  ✅ 8 export readiness profiles');
+
+  // ─── Global Product Listings ────────────────────────────────────
+  const globalProducts = [
+    { name: 'Basmati Rice (1121)', cat: 'Grains', origin: 'Haryana', qty: 50000, moq: 5000, price: 180, grade: 'A+', pack: '25 kg vacuum bags', shelf: '12 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Turmeric Powder (Organic)', cat: 'Spices', origin: 'Tamil Nadu', qty: 30000, moq: 2000, price: 150, grade: 'A', pack: '25/50 kg HDPE bags', shelf: '18 months', export: 'EXPORT_ELIGIBLE_WITH_VERIFICATION', cold: false },
+    { name: 'Red Chili Powder (Guntur)', cat: 'Spices', origin: 'Andhra Pradesh', qty: 25000, moq: 1000, price: 130, grade: 'A', pack: '25 kg bags', shelf: '12 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Alphonso Mango (Hapus)', cat: 'Fruits', origin: 'Maharashtra', qty: 15000, moq: 500, price: 450, grade: 'A', pack: '4.5 kg corrugated boxes', shelf: '14 days', export: 'EXPORT_POTENTIAL', cold: true },
+    { name: 'Green Cardamom (8mm+)', cat: 'Spices', origin: 'Kerala', qty: 5000, moq: 500, price: 2200, grade: 'A+', pack: '5/10 kg vacuum bags', shelf: '24 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Cumin Seeds (Semi-Bold)', cat: 'Spices', origin: 'Rajasthan', qty: 20000, moq: 2000, price: 200, grade: 'A', pack: '25/50 kg bags', shelf: '18 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Organic Tur Dal', cat: 'Pulses', origin: 'Madhya Pradesh', qty: 40000, moq: 5000, price: 160, grade: 'A', pack: '50 kg organic bags', shelf: '12 months', export: 'EXPORT_ELIGIBLE_WITH_VERIFICATION', cold: false },
+    { name: 'Fresh Pomegranate (Bhagwa)', cat: 'Fruits', origin: 'Maharashtra', qty: 20000, moq: 1000, price: 130, grade: 'A', pack: '4 kg trays', shelf: '30 days', export: 'EXPORT_POTENTIAL', cold: true },
+    { name: 'Black Pepper (Tellicherry)', cat: 'Spices', origin: 'Kerala', qty: 8000, moq: 500, price: 750, grade: 'A', pack: '25 kg bags', shelf: '24 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Mustard Seeds (Yellow)', cat: 'Spices', origin: 'Rajasthan', qty: 35000, moq: 5000, price: 85, grade: 'A', pack: '50 kg bags', shelf: '12 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Long Grain Rice (Pusa)', cat: 'Grains', origin: 'Punjab', qty: 80000, moq: 10000, price: 80, grade: 'A', pack: '50 kg bags', shelf: '12 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Saffron (Mongra)', cat: 'Spices', origin: 'Jammu & Kashmir', qty: 500, moq: 50, price: 400000, grade: 'A+', pack: '1/5 g vacuum tins', shelf: '36 months', export: 'EXPORT_ELIGIBLE_WITH_VERIFICATION', cold: false },
+    { name: 'A2 Gir Ghee', cat: 'Dairy', origin: 'Rajasthan', qty: 10000, moq: 500, price: 550, grade: 'A+', pack: '1/5/15 kg tins', shelf: '12 months', export: 'EXPORT_ELIGIBLE', cold: false },
+    { name: 'Fresh Banana (Cavendish)', cat: 'Fruits', origin: 'Tamil Nadu', qty: 100000, moq: 10000, price: 30, grade: 'A', pack: '13.5 kg boxes', shelf: '7 days', export: 'LOCAL_ONLY', cold: true },
+    { name: 'Chickpea Flour (Besan)', cat: 'Pulses', origin: 'Rajasthan', qty: 30000, moq: 5000, price: 70, grade: 'A', pack: '50 kg bags', shelf: '6 months', export: 'EXPORT_POTENTIAL', cold: false },
+  ];
+
+  const farmerExportIds = farmerIds.slice(0, 10);
+  const globalProductIds: string[] = [];
+  for (let i = 0; i < globalProducts.length; i++) {
+    const gp = globalProducts[i];
+    const pid = await prisma.globalProductListing.create({
+      data: {
+        farmerId: farmerExportIds[i % farmerExportIds.length],
+        productName: gp.name, category: gp.cat,
+        description: `Premium quality ${gp.name.toLowerCase()} from ${gp.origin}, India. Available for global bulk export.`,
+        originState: gp.origin, countryOfOrigin: 'India',
+        availableQuantity: gp.qty, unit: 'kg', moq: gp.moq,
+        maxSupplyCapacity: gp.qty * 1.5, availableDate: '2026-10-01',
+        harvestDate: '2026-09-15',
+        upcomingHarvest: Math.random() > 0.5, advanceBooking: Math.random() > 0.3,
+        qualityGrade: gp.grade, expectedPrice: gp.price, currency: 'INR',
+        packagingOptions: gp.pack, shelfLife: gp.shelf,
+        storageRequirement: gp.cold ? 'Cold chain required' : 'Dry, ventilated storage',
+        coldChainRequired: gp.cold, domesticDelivery: true,
+        exportStatus: gp.export, certifications: 'FSSAI, APEDA (where applicable)',
+      },
+    });
+    globalProductIds.push(pid.id);
+  }
+  console.log(`  ✅ ${globalProducts.length} global product listings`);
+
+  // ─── Export Eligibility Rules ───────────────────────────────────
+  for (const pid of globalProductIds) {
+    const destinations = ['UAE', 'Germany', 'United Kingdom', 'Japan', 'Saudi Arabia', 'France', 'Australia'];
+    for (const dest of pickN(destinations, rand(2, 5))) {
+      const feasible = Math.random() > 0.3;
+      await prisma.exportEligibility.create({
+        data: {
+          productId: pid, destination: dest,
+          status: feasible ? pick(['POTENTIALLY_FEASIBLE', 'VERIFIED']) : pick(['VERIFICATION_REQUIRED', 'NOT_SUPPORTED']),
+          feasible,
+          reasons: feasible ? 'Product meets basic export criteria' : 'Requires additional compliance documentation',
+          requirements: JSON.stringify(feasible ? ['FSSAI License', 'Phytosanitary Certificate'] : ['APEDA Registration', 'Phytosanitary Certificate', 'Fumigation Certificate']),
+        },
+      });
+    }
+  }
+  console.log('  ✅ export eligibility rules');
+
+  // ─── RFQs ──────────────────────────────────────────────────────
+  const rfqData = [
+    { buyerIdx: 0, product: 'Basmati Rice (1121)', qty: 20000, dest: 'UAE', city: 'Dubai', timeline: 'November 2026', quality: 'A+, Extra Long Grain, 8% broken max', pkg: '50 kg vacuum bags', cold: false, price: 2.50, currency: 'USD' },
+    { buyerIdx: 1, product: 'Turmeric Powder (Organic)', qty: 15000, dest: 'Germany', city: 'Hamburg', timeline: 'October 2026', quality: 'A Grade, 3-5% curcumin, Organic Certified', pkg: '25 kg HDPE bags', cold: false, price: 2.10, currency: 'EUR' },
+    { buyerIdx: 2, product: 'Alphonso Mango (Hapus)', qty: 5000, dest: 'United Kingdom', city: 'London', timeline: 'June 2027', quality: 'A Grade, Alphonso variety, Ratnagiri origin', pkg: '4.5 kg corrugated boxes', cold: true, price: 7.50, currency: 'GBP' },
+    { buyerIdx: 4, product: 'Red Chili Powder (Guntur)', qty: 10000, dest: 'Saudi Arabia', city: 'Jeddah', timeline: 'September 2026', quality: 'A Grade, Color 60-100 SHU, 5mm mesh', pkg: '25 kg bags', cold: false, price: 2.00, currency: 'SAR' },
+    { buyerIdx: 7, product: 'Cumin Seeds (Semi-Bold)', qty: 25000, dest: 'China', city: 'Shanghai', timeline: 'November 2026', quality: 'A Grade, 99% purity, 98% admatter', pkg: '50 kg bags', cold: false, price: 3.00, currency: 'CNY' },
+    { buyerIdx: 3, product: 'Green Cardamom (8mm+)', qty: 3000, dest: 'Japan', city: 'Tokyo', timeline: 'December 2026', quality: 'A+, 8mm+ size, bold capsules', pkg: '10 kg vacuum bags', cold: false, price: 35.00, currency: 'USD' },
+    { buyerIdx: 5, product: 'Organic Tur Dal', qty: 20000, dest: 'France', city: 'Marseille', timeline: 'October 2026', quality: 'Organic Certified, A Grade, EU compliant', pkg: '25 kg organic-certified bags', cold: false, price: 2.30, currency: 'EUR' },
+    { buyerIdx: 6, product: 'Fresh Pomegranate (Bhagwa)', qty: 8000, dest: 'Australia', city: 'Sydney', timeline: 'November 2026', quality: 'A Grade, Bhagwa variety, 200-250gm', pkg: '4 kg trays, clamshell', cold: true, price: 4.50, currency: 'AUD' },
+    { buyerIdx: 8, product: 'Saffron (Mongra)', qty: 100, dest: 'Spain', city: 'Barcelona', timeline: 'January 2027', quality: 'A+, Mongra grade, ISO 3632 Category I', pkg: '1 g vacuum tins', cold: false, price: 5500, currency: 'USD' },
+    { buyerIdx: 9, product: 'Long Grain Rice (Pusa)', qty: 30000, dest: 'South Korea', city: 'Busan', timeline: 'December 2026', quality: 'A Grade, 1121 Steam, 5% broken max', pkg: '50 kg bags', cold: false, price: 1.20, currency: 'USD' },
+  ];
+
+  const rfqIds: string[] = [];
+  for (const r of rfqData) {
+    const rfq = await prisma.exportRFQ.create({
+      data: {
+        buyerId: (await prisma.globalBuyerProfile.findUnique({ where: { userId: globalUserIds[r.buyerIdx] } }))!.id,
+        productRequired: r.product, requiredQuantity: r.qty, unit: 'kg',
+        destinationCountry: r.dest, destinationCity: r.city, deliveryTimeline: r.timeline,
+        qualityRequirements: r.quality, packagingRequirements: r.pkg,
+        coldChainRequired: r.cold, targetPrice: r.price, preferredCurrency: r.currency,
+        additionalNotes: `Looking for reliable suppliers. Competitive pricing preferred.`,
+        status: pick(['SUBMITTED', 'MATCHING', 'OFFERS_RECEIVED', 'ACCEPTED']),
+      },
+    });
+    rfqIds.push(rfq.id);
+
+    // RFQ Items
+    await prisma.exportRFQItem.create({
+      data: { rfqId: rfq.id, productName: r.product, quantity: r.qty, unit: 'kg', qualityGrade: r.quality.split(',')[0], specialReqs: r.pkg },
+    });
+  }
+  console.log(`  ✅ ${rfqIds.length} RFQs`);
+
+  // ─── Supplier Matches ───────────────────────────────────────────
+  for (const rfqId of rfqIds.slice(0, 5)) {
+    for (const fid of pickN(farmerExportIds, rand(3, 6))) {
+      const pScore = rand(50, 98);
+      const qScore = rand(40, 95);
+      const qualScore = rand(55, 100);
+      const tScore = rand(30, 90);
+      const rScore = rand(40, 95);
+      const lScore = rand(35, 85);
+      const relScore = rand(50, 100);
+      const avg = (pScore + qScore + qualScore + tScore + rScore + lScore + relScore) / 7;
+      await prisma.exportSupplierMatch.create({
+        data: {
+          rfqId, farmerId: fid, matchScore: round2(avg),
+          productScore: pScore, quantityScore: qScore, qualityScore: qualScore,
+          timelineScore: tScore, readinessScore: rScore, locationScore: lScore, reliabilityScore: relScore,
+          status: pick(['PENDING', 'VIEWED', 'SHORTLISTED', 'REJECTED']),
+        },
+      });
+    }
+  }
+  console.log('  ✅ supplier matches');
+
+  // ─── Supply Aggregations ────────────────────────────────────────
+  for (const rfqId of rfqIds.slice(0, 3)) {
+    const agg = await prisma.supplyAggregation.create({
+      data: {
+        rfqId, totalRequired: pick([10000, 15000, 20000]), totalAvailable: pick([10500, 16000, 22000]),
+        matchPercentage: round2(rand(85, 100)),
+        status: pick(['PROPOSED', 'REVIEWING', 'APPROVED']),
+        consolidationHub: pick(['Panipat Collection Hub', 'Noida Consolidation Point', 'Gurugram Warehouse']),
+        notes: 'Multi-farmer consolidation recommended for optimal logistics',
+      },
+    });
+    for (const fid of pickN(farmerExportIds, 3)) {
+      await prisma.supplyAggregationSupplier.create({
+        data: {
+          aggregationId: agg.id, farmerId: fid,
+          quantity: pick([3000, 4000, 5000, 7000, 8000]),
+          quality: pick(['A Grade', 'A+ Grade', 'A/B Grade']),
+          location: pick(['Haryana', 'Punjab', 'Rajasthan', 'Madhya Pradesh']),
+          exportReadiness: pick(['VERIFIED_FOR_PLATFORM', 'DOCUMENTS_SUBMITTED', 'BASIC_PROFILE']),
+        },
+      });
+    }
+  }
+  console.log('  ✅ supply aggregations');
+
+  // ─── Shipping Estimates ─────────────────────────────────────────
+  const shippingMethods = ['SEA_FREIGHT', 'AIR_FREIGHT', 'TEMPERATURE_CONTROLLED'];
+  for (const rfqId of rfqIds.slice(0, 5)) {
+    for (const method of pickN(shippingMethods, 2)) {
+      const base = method === 'AIR_FREIGHT' ? 80000 : method === 'SEA_FREIGHT' ? 25000 : 95000;
+      const pkgCost = rand(5000, 15000);
+      const inland = rand(8000, 25000);
+      const handling = rand(3000, 8000);
+      const freight = base + rand(-5000, 10000);
+      const insurance = Math.round((pkgCost + inland + freight) * 0.02);
+      const docCost = rand(2000, 5000);
+      await prisma.shippingEstimate.create({
+        data: {
+          rfqId, shippingMethod: method,
+          productValue: rand(100000, 500000), packagingCost: pkgCost,
+          inlandTransport: inland, handlingCost: handling, freightCost: freight,
+          insuranceCost: insurance, documentationCost: docCost,
+          totalEstimate: pkgCost + inland + handling + freight + insurance + docCost,
+          currency: 'USD',
+          transitDays: method === 'SEA_FREIGHT' ? '15-25 days' : method === 'AIR_FREIGHT' ? '3-5 days' : '10-18 days',
+          dataSource: 'DEMO_SIMULATED',
+          notes: 'Estimated quote — final cost subject to carrier confirmation and shipment details.',
+        },
+      });
+    }
+  }
+  console.log('  ✅ shipping estimates');
+
+  // ─── Export Shipments ───────────────────────────────────────────
+  for (const rfqId of rfqIds.slice(0, 2)) {
+    const shipment = await prisma.exportShipment.create({
+      data: {
+        rfqId, status: pick(['CREATED', 'PREPARATION', 'READY_FOR_DISPATCH', 'SHIPPED']),
+        shippingMethod: pick(['SEA_FREIGHT', 'AIR_FREIGHT']),
+        trackingNumber: `EXP-${rand(100000, 999999)}`,
+        estimatedDeparture: '2026-10-15', estimatedArrival: '2026-11-05',
+        notes: 'Shipment under preparation',
+      },
+    });
+    const statuses = ['CREATED', 'PREPARATION', 'DOCUMENTS_VERIFIED', 'READY_FOR_DISPATCH'];
+    for (const s of statuses.slice(0, rand(1, 4))) {
+      await prisma.exportShipmentStatus.create({
+        data: { shipmentId: shipment.id, status: s, notes: `Shipment ${s.toLowerCase()}` },
+      });
+    }
+  }
+  console.log('  ✅ export shipments with status history');
+
+  // ─── Export Document Requirements ───────────────────────────────
+  const docReqs = [
+    { name: 'FSSAI License', desc: 'Food Safety and Standards Authority of India license', cat: 'REGULATORY', prod: null, country: null },
+    { name: 'Phytosanitary Certificate', desc: 'Certificate from Plant Quarantine', cat: 'REGULATORY', prod: null, country: null },
+    { name: 'Certificate of Origin', desc: 'Origin certificate for the exporting country', cat: 'TRADE', prod: null, country: null },
+    { name: 'APEDA Registration', desc: 'Agricultural and Processed Food Products Export Development Authority', cat: 'REGULATORY', prod: 'Spices', country: null },
+    { name: 'Fumigation Certificate', desc: 'Mandatory for grain/spice exports', cat: 'QUALITY', prod: 'Grains,Spices', country: null },
+    { name: 'Lab Test Report', desc: 'Quality and residue analysis', cat: 'QUALITY', prod: null, country: null },
+    { name: 'Insurance Certificate', desc: 'Marine/transit insurance', cat: 'LOGISTICS', prod: null, country: null },
+    { name: 'Halal Certificate', desc: 'Halal compliance certification', cat: 'COMPLIANCE', prod: null, country: 'Saudi Arabia,UAE' },
+  ];
+  const docReqIds: string[] = [];
+  for (const d of docReqs) {
+    const dr = await prisma.exportDocumentRequirement.create({
+      data: { name: d.name, description: d.desc, category: d.cat, applicableProduct: d.prod, applicableCountry: d.country, required: true },
+    });
+    docReqIds.push(dr.id);
+  }
+  console.log(`  ✅ ${docReqs.length} document requirements`);
+
+  // ─── Export Documents (some uploaded) ───────────────────────────
+  for (const fid of farmerExportIds.slice(0, 5)) {
+    for (const drId of pickN(docReqIds, rand(2, 5))) {
+      const uploaded = Math.random() > 0.4;
+      await prisma.exportDocument.create({
+        data: {
+          requirementId: drId, farmerId: fid,
+          fileName: uploaded ? `${drId.slice(0, 8)}_${fid.slice(0, 8)}.pdf` : null,
+          status: uploaded ? pick(['UPLOADED', 'UNDER_REVIEW', 'VERIFIED']) : 'NOT_UPLOADED',
+        },
+      });
+    }
+  }
+  console.log('  ✅ export documents (sample)');
 
   // ─── Summary ───────────────────────────────────────────────────
   const counts = await Promise.all([

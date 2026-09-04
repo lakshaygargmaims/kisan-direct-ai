@@ -153,6 +153,8 @@ export default function DemandHeatmap() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [showRec, setShowRec] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [statsOpen, setStatsOpen] = useState(true);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -350,45 +352,56 @@ export default function DemandHeatmap() {
         <div className="flex-1 relative overflow-hidden">
           <div ref={mapContainer} className="w-full h-full" />
 
-          {/* Stats overlay */}
-          <div className="absolute top-4 left-4 z-10 bg-gray-800/90 backdrop-blur rounded-xl p-4 border border-gray-700 max-w-xs">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">{PRODUCTS.find(p => p.name === product)?.emoji}</span>
-              <div>
-                <h3 className="font-bold text-sm">{product}</h3>
-                <p className="text-xs text-gray-400">Demand Analysis</p>
-              </div>
+          {/* Stats overlay — collapsible */}
+          <div className="absolute top-4 left-4 z-20 bg-gray-800/90 backdrop-blur rounded-xl border border-gray-700 max-w-xs transition-all">
+          <button onClick={() => setStatsOpen(!statsOpen)} className="flex items-center gap-2 px-4 py-3 w-full text-left hover:bg-gray-700/50 rounded-xl">
+            <span className="text-2xl">{PRODUCTS.find(p => p.name === product)?.emoji}</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-sm">{product}</h3>
+              <p className="text-xs text-gray-400">Demand Analysis</p>
             </div>
-            {heatmap && (
-              <div className="space-y-2 text-xs">
-                {[
-                  ['Zones analyzed', heatmap.zoneCount],
-                  ['High demand', <span key="h" className="text-red-400">{heatmap.highDemandZones}</span>],
-                  ['Medium demand', <span key="m" className="text-yellow-400">{heatmap.mediumDemandZones}</span>],
-                  ['Low demand', <span key="l" className="text-green-400">{heatmap.lowDemandZones}</span>],
-                ].map(([label, value]) => (
-                  <div key={label as string} className="flex justify-between">
-                    <span className="text-gray-400">{label}</span><span className="font-medium">{value}</span>
+            {statsOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </button>
+          {statsOpen && (
+            <div className="p-4 pt-0">
+              {heatmap && (
+                <div className="space-y-2 text-xs">
+                  {[
+                    ['Zones analyzed', heatmap.zoneCount],
+                    ['High demand', <span key="h" className="text-red-400">{heatmap.highDemandZones}</span>],
+                    ['Medium demand', <span key="m" className="text-yellow-400">{heatmap.mediumDemandZones}</span>],
+                    ['Low demand', <span key="l" className="text-green-400">{heatmap.lowDemandZones}</span>],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="flex justify-between">
+                      <span className="text-gray-400">{label}</span><span className="font-medium">{value}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-1 border-t border-gray-700">
+                    <span className="text-gray-400">Seasonal factor</span>
+                    <span className="font-medium">{heatmap.seasonalFactor}x ({heatmap.season})</span>
                   </div>
-                ))}
-                <div className="flex justify-between pt-1 border-t border-gray-700">
-                  <span className="text-gray-400">Seasonal factor</span>
-                  <span className="font-medium">{heatmap.seasonalFactor}x ({heatmap.season})</span>
                 </div>
-              </div>
-            )}
-            <p className="mt-3 pt-2 border-t border-gray-700 text-[10px] text-gray-500 flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" /> Simulated demand data for demo
-            </p>
+              )}
+              <p className="mt-3 pt-2 border-t border-gray-700 text-[10px] text-gray-500 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Simulated demand data for demo
+              </p>
+            </div>
+          )}
           </div>
 
-          {/* Legend */}
-          <div className="absolute bottom-4 left-4 z-10 bg-gray-800/90 backdrop-blur rounded-lg px-3 py-2 border border-gray-700">
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /><span className="text-gray-300">HIGH (71-100)</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-400" /><span className="text-gray-300">MEDIUM (41-70)</span></div>
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /><span className="text-gray-300">LOW (0-40)</span></div>
-            </div>
+          {/* Legend — collapsible */}
+          <div className="absolute bottom-4 left-4 z-20 bg-gray-800/90 backdrop-blur rounded-lg border border-gray-700 transition-all">
+            <button onClick={() => setLegendOpen(!legendOpen)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-gray-700/50 rounded-lg">
+              <span className="text-xs font-bold text-gray-300">Legend</span>
+              {legendOpen ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronUp className="w-3 h-3 text-gray-400" />}
+            </button>
+            {legendOpen && (
+              <div className="px-3 pb-2 flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /><span className="text-gray-300">HIGH (71-100)</span></div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-400" /><span className="text-gray-300">MEDIUM (41-70)</span></div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" /><span className="text-gray-300">LOW (0-40)</span></div>
+              </div>
+            )}
           </div>
 
           {isLoading && (
