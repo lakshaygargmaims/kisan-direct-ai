@@ -1,0 +1,25 @@
+name: Keep Railway Awake
+
+# Pings the Railway deployment every 5 minutes so the free-tier service
+# never falls asleep between visitors. Runs on GitHub's servers — free and
+# always-on for public repositories. The app is a single service, so one
+# health check per cycle is enough (wakes the whole stack).
+
+on:
+  schedule:
+    # every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # allow a manual "Run workflow" from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake API / health endpoint
+        run: curl -sS -o /dev/null -w "health:%{http_code}\n" --max-time 60 https://kisan-direct-ai-production.up.railway.app/api/health
+      - name: Wake homepage
+        run: curl -sS -o /dev/null -w "home:%{http_code}\n" --max-time 60 https://kisan-direct-ai-production.up.railway.app/
