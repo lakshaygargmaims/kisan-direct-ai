@@ -112,22 +112,17 @@ export default function FarmerProducts() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Link to={`/marketplace/product/${p.id}`} className="p-1.5 text-gray-400 hover:text-blue-600 rounded">
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => setDeleteTarget({ id: p.id, name: p.name })}
-                          disabled={deleting === p.id}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded disabled:opacity-50 transition-colors"
-                          title="Delete product">
-                          {deleting === p.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setDeleteTarget({ id: p.id, name: p.name })}
+                        disabled={deleting === p.id}
+                        className="p-1.5 text-gray-400 hover:text-red-600 rounded disabled:opacity-50 transition-colors"
+                        title="Deactivate product">
+                        {deleting === p.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
                     </td>
                   </tr>
                 );

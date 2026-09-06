@@ -1,7 +1,9 @@
 import express from 'express';
-import cors from 'cors';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config';
+import { isOriginAllowed } from './utils/cors';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
 import productRoutes from './routes/product.routes';
@@ -21,21 +23,26 @@ import { initSocket } from './utils/socket';
 const app = express();
 const httpServer = http.createServer(app);
 
-// Middleware
-app.use(cors({ origin: (origin, callback) => {
-  const allowedOrigins = [
-    config.frontendUrl,
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://kisan-direct-ai.vercel.app',
-  ];
-  // Allow requests with no origin (mobile apps, curl, etc.)
-  if (!origin || allowedOrigins.includes(origin)) {
-    callback(null, true);
-  } else {
-    callback(new Error('Not allowed by CORS'));
+// CORS — the API is same-origin with the UI in production (single service), but we
+// still allow the configured FRONTEND_URL, *.railway.app / *.vercel.app previews,
+// localhost dev origins, and CORS_ORIGINS so the API can be consumed separately.
+// Same-origin requests (Origin matches the request Host) are always allowed.
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const host = req.headers.host;
+  if (!origin || isOriginAllowed(origin, host)) {
+    res.setHeader('Vary', 'Origin');
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    return next();
   }
-}, credentials: true }));
+  res.status(403).json({ success: false, error: 'Not allowed by CORS' });
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -62,6 +69,32 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ─── Serve the built frontend (single-service mode) ───────────────
+// When a frontend build exists, the same Express server hosts the React app,
+// so the whole product runs from ONE process and ONE URL. In development the
+// Vite dev server (port 5173) proxies /api here, and this block is skipped.
+const frontendDistCandidates = [
+  process.env.FRONTEND_DIST,
+  path.resolve(__dirname, '..', '..', 'frontend', 'dist'), // backend/dist → repo/frontend/dist
+  path.resolve(process.cwd(), '..', 'frontend', 'dist'),
+  path.resolve(process.cwd(), 'frontend', 'dist'),
+].filter(Boolean) as string[];
+
+const frontendDist = frontendDistCandidates.find((d) => fs.existsSync(path.join(d, 'index.html')));
+if (frontendDist) {
+  app.use(express.static(frontendDist));
+  // SPA fallback: client-side routes (/marketplace, /dashboard, ...) return index.html
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      return res.sendFile(path.join(frontendDist, 'index.html'));
+    }
+    next();
+  });
+  console.log(`🖥️  Serving frontend from ${frontendDist}`);
+} else {
+  console.log('ℹ️  No frontend build found — API-only mode (use the Vite dev server in development).');
+}
 
 // Error handler
 app.use(errorHandler);

@@ -336,6 +336,21 @@ const DEMO_EMAILS = new Set([
 async function seed() {
   console.log('🌱 Seeding KisanDirect AI database...\n');
 
+  // ─── Non-destructive guard ──────────────────────────────────────
+  // Seeding deletes ALL existing rows and recreates demo data, so it must
+  // never run automatically against a populated database. It only runs when
+  // the database is empty OR the operator explicitly opts in with RESET_DB=true
+  // (used by deployed environments, e.g. Railway start command).
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0 && process.env.RESET_DB !== 'true') {
+    console.log(`ℹ️  Database already has ${existingUsers} users — skipping seed.`);
+    console.log('   Set RESET_DB=true to wipe and reseed from scratch.');
+    return;
+  }
+  if (process.env.RESET_DB === 'true') {
+    console.log('⚠️  RESET_DB=true — wiping all existing data before reseeding.');
+  }
+
   // ─── Clean all tables ──────────────────────────────────────────
   const tables = [
     // Global Trade (must be before User)

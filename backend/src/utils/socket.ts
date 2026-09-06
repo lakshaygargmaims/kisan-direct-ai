@@ -10,7 +10,10 @@ let io: SocketIOServer | null = null;
 export function initSocket(httpServer: HTTPServer): SocketIOServer {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      // Same-origin in the single-service deployment; in dev the Vite proxy
+      // forwards /socket.io. Authentication is via the JWT in the handshake,
+      // so cross-origin WS connections carry no session privileges.
+      origin: true,
       methods: ['GET', 'POST'],
       credentials: true,
     },

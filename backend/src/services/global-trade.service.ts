@@ -186,7 +186,13 @@ export class GlobalTradeService {
     if (filters.category) where.category = filters.category;
     if (filters.exportStatus) where.exportStatus = filters.exportStatus;
     if (filters.originState) where.originState = filters.originState;
-    if (filters.search) where.productName = { contains: filters.search, mode: 'insensitive' };
+    if (filters.search) {
+      // SQLite LIKE is case-insensitive by default; Postgres needs explicit mode
+      const isPostgres = (process.env.DB_PROVIDER || 'sqlite').toLowerCase() === 'postgres';
+      where.productName = isPostgres
+        ? { contains: filters.search, mode: 'insensitive' }
+        : { contains: filters.search };
+    }
     if (filters.minQuantity) where.availableQuantity = { gte: parseFloat(filters.minQuantity) };
     if (filters.coldChain !== undefined) where.coldChainRequired = filters.coldChain === 'true';
 
@@ -213,6 +219,21 @@ export class GlobalTradeService {
     return prisma.globalProductListing.create({
       data: { ...data, farmerId: userId },
     });
+  }
+
+  async getMyGlobalProducts(userId: string) {
+    return prisma.globalProductListing.findMany({
+      where: { farmerId: userId },
+      include: { user: { select: { id: true, name: true, role: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async deactivateGlobalProduct(id: string, userId: string) {
+    const listing = await prisma.globalProductListing.findUnique({ where: { id } });
+    if (!listing) throw new Error('Listing not found');
+    if (listing.farmerId !== userId) throw new Error('Not authorized to modify this listing');
+    return prisma.globalProductListing.update({ where: { id }, data: { isActive: false } });
   }
 
   // ─── RFQ ───
@@ -366,7 +387,13 @@ export class GlobalTradeService {
 
     const result = aggregateSupply(matches, rfq.requiredQuantity);
 
-    // Remove old aggregation
+    // Remove old aggregation — delete child suppliers first to respect the FK
+    const priorAggs = await prisma.supplyAggregation.findMany({ where: { rfqId }, select: { id: true } });
+    if (priorAggs.length > 0) {
+      await prisma.supplyAggregationSupplier.deleteMany({
+        where: { aggregationId: { in: priorAggs.map(a => a.id) } },
+      });
+    }
     await prisma.supplyAggregation.deleteMany({ where: { rfqId } });
 
     const aggregation = await prisma.supplyAggregation.create({
@@ -402,8 +429,11 @@ export class GlobalTradeService {
 
   // ─── Offers ───
   async createOffer(data: any, farmerId: string) {
+    // Derive the buyer profile from the RFQ when the caller does not supply it
+    const rfq = await prisma.exportRFQ.findUnique({ where: { id: data.rfqId } });
+    if (!rfq) throw new Error('RFQ not found');
     return prisma.exportOffer.create({
-      data: { ...data, farmerId },
+      data: { ...data, farmerId, buyerId: data.buyerId || rfq.buyerId },
     });
   }
 

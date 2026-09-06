@@ -8,6 +8,8 @@ const router = Router();
 router.get('/products', (req, res) => globalTradeController.getGlobalProducts(req, res));
 router.get('/products/:id', (req, res) => globalTradeController.getGlobalProduct(req, res));
 router.post('/products', authenticate, authorize('FARMER', 'FPO'), (req, res) => globalTradeController.createGlobalProduct(req, res));
+router.delete('/products/:id', authenticate, authorize('FARMER', 'FPO'), (req, res) => globalTradeController.deleteGlobalProduct(req, res));
+router.get('/my-products', authenticate, authorize('FARMER', 'FPO'), (req, res) => globalTradeController.getMyGlobalProducts(req, res));
 
 // ─── Buyer Profile ───
 router.get('/buyer/profile', authenticate, (req, res) => globalTradeController.getBuyerProfile(req, res));

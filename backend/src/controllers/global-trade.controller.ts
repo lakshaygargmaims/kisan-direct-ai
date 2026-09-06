@@ -33,6 +33,24 @@ export class GlobalTradeController {
     }
   }
 
+  async getMyGlobalProducts(req: AuthRequest, res: Response) {
+    try {
+      const products = await globalTradeService.getMyGlobalProducts(req.user!.userId);
+      res.json({ success: true, data: { products } });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  async deleteGlobalProduct(req: AuthRequest, res: Response) {
+    try {
+      const product = await globalTradeService.deactivateGlobalProduct(req.params.id, req.user!.userId);
+      res.json({ success: true, data: product });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
   // ─── Buyer Profile ───
   async getBuyerProfile(req: AuthRequest, res: Response) {
     try {

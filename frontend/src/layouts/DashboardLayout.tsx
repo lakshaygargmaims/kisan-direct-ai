@@ -32,6 +32,7 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.demandMap', path: '/farmer/demand-map', icon: Map },
     { labelKey: 'nav.upcomingHarvests', path: '/farmer/harvests', icon: Sprout },
     { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
+    { labelKey: 'nav.globalListings', path: '/farmer/global-listings', icon: FileText },
   ],
   FPO: [
     { labelKey: 'nav.dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
@@ -41,6 +42,7 @@ const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any 
     { labelKey: 'nav.clubbing', path: '/farmer/clubbing', icon: TrendingUp },
     { labelKey: 'nav.analytics', path: '/farmer/analytics', icon: BarChart3 },
     { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
+    { labelKey: 'nav.globalListings', path: '/farmer/global-listings', icon: FileText },
   ],
   B2B_BUYER: [
     { labelKey: 'nav.dashboard', path: '/buyer/dashboard', icon: LayoutDashboard },

@@ -133,10 +133,9 @@ export default function ProductDetails() {
 
       {/* Farmer Info */}
       <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-semibold mb-3">{t('consumer.productDetail.farmer')}</h3>
-        <div className="flex items-center gap-4">
+        <h3 className="font-semibold mb-3">{t('consumer.productDetail.farmer')}</h3>          <div className="flex items-center gap-4">
           <div className="h-14 w-14 bg-green-100 rounded-full flex items-center justify-center text-xl font-bold text-green-700">
-            {product.farmer?.user?.name?.charAt(0)}
+            {product.farmer?.name?.charAt(0) || 'F'}
           </div>
           <div>              <p className="font-medium">{product.farmer?.name}</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">

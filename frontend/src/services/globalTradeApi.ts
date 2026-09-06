@@ -1,7 +1,8 @@
 const BASE = '/api/global';
 
 const authHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('token');
+  // Same token key the rest of the app uses (see services/api.ts)
+  const token = localStorage.getItem('kisan_token');
   if (token) return { Authorization: `Bearer ${token}` };
   return {};
 };
@@ -34,6 +35,8 @@ export const getGlobalProducts = (filters?: Record<string, any>) => {
 
 export const getGlobalProduct = (id: string) => get(`/products/${id}`);
 export const createGlobalProduct = (data: any) => post('/products', data);
+export const getMyGlobalProducts = () => get('/my-products');
+export const deleteGlobalProduct = (id: string) => request('DELETE', `/products/${id}`);
 
 // ─── Buyer Profile ────────────────────────────────────────────
 export const getBuyerProfile = () => get('/buyer/profile');

@@ -1,4 +1,9 @@
-const API_BASE = '/api';
+// Base URL for API calls.
+// - Local dev:      unset  → relative '/api' (Vite dev server proxies to the backend)
+// - Vercel build:   unset  → relative '/api' (vercel.json rewrites to the Railway backend)
+// - Vercel build:   set VITE_API_URL to the Railway URL (e.g. https://api.example.up.railway.app)
+//                   if you prefer direct calls instead of the rewrite proxy.
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
 
 function getToken(): string | null {
   return localStorage.getItem('kisan_token');
@@ -21,7 +26,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok && res.status === 0) throw new Error('Cannot connect to server');
   const data = await safeJson(res);
-  if (!data.success) throw new Error(data.error || 'Request failed');  return data.data;
+  if (!data.success) {
+    const msg = data.error || 'Request failed';
+    if (Array.isArray(data.details) && data.details.length > 0) {
+      throw new Error(msg + ' — ' + data.details.map((d: any) => `${d.field}: ${d.message}`).join('; '));
+    }
+    throw new Error(msg);
+  }
+  return data.data;
 }
 
 export const api = {

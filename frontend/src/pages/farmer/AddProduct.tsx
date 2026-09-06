@@ -7,7 +7,7 @@ import { Mic, Save, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Pulses', 'Spices', 'Dairy', 'Processed', 'Other'];
-const GRADES = ['A+', 'A', 'B+', 'B', 'C'];
+const GRADES = ['A+', 'A', 'B+', 'B', 'C', 'D'];
 
 export default function AddProduct() {
   const { t } = useTranslation();
@@ -56,6 +56,7 @@ export default function AddProduct() {
         coldChainRequired: form.coldChainRequired,
         categoryId: form.categoryId,
         deliveryRule: {
+          deliveryMode: 'PLATFORM',
           maxDeliveryRadiusKm: Number(form.deliveryRadius),
           interstateAllowed: form.interstateAllowed,
           coldChainRequired: form.coldChainRequired,

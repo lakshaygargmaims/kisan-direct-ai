@@ -27,10 +27,11 @@ Farmer → Direct Marketplace → Consumer / B2B Buyer → Smart Geo-Logistics �
 |-------|-----------|
 | Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Recharts, MapLibre GL JS |
 | Backend | Node.js, Express.js, TypeScript, JWT Auth, Prisma ORM |
-| Database | PostgreSQL |
-| AI/ML Service | Python, FastAPI, scikit-learn, pandas, numpy |
+| Database | PostgreSQL (production) / SQLite (zero-setup local dev) |
 | Maps | MapLibre GL JS (OpenStreetMap compatible) |
 | State | Zustand, TanStack Query |
+
+> **Single-service architecture:** the Express backend serves the built React app, the REST API and WebSockets from **one process and one URL** — no CORS, no cross-origin sockets, no separate frontend host. Local development still uses the Vite dev server on :5173 proxying to the API on :3001.
 
 ## Features
 
@@ -76,8 +77,6 @@ Farmer → Direct Marketplace → Consumer / B2B Buyer → Smart Geo-Logistics �
 
 ### Prerequisites
 - Node.js 18+
-- Python 3.10+
-- PostgreSQL 14+
 
 ### 1. Clone & Install
 
@@ -86,41 +85,26 @@ git clone <repo-url>
 cd kisan-direct-ai
 
 # Install all dependencies
-npm install
-cd frontend && npm install && cd ..
-cd backend && npm install && cd ..
+npm run setup
 ```
 
-### 2. Database Setup
+### 2. Run in Development (SQLite, zero setup)
 
 ```bash
-# Start PostgreSQL (or use Docker)
-docker-compose up -d postgres
-
-# Setup database
-cd backend
-cp ../.env.example ../.env
-npx prisma generate
-npx prisma db push
-npx prisma db seed
-cd ..
-```
-
-### 3. Run Services
-
-```bash
-# Run all services concurrently
+# Runs backend (:3001) + Vite frontend (:5173, proxies /api and /socket.io)
 npm run dev
-
-# Or run individually:
-cd backend && npm run dev      # Port 3001
-cd frontend && npm run dev     # Port 5173
-cd ai-service && python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 4. Open Browser
+Open **http://localhost:5173**. The first boot auto-creates the SQLite database and seeds demo accounts/products.
 
-Visit: **http://localhost:5173**
+### 3. Run in Production Mode (single service)
+
+```bash
+npm run build        # builds frontend + backend
+npm start            # one Express server serves UI + API + WebSockets on :3001
+```
+
+Open **http://localhost:3001** — the whole app runs from one URL.
 
 ---
 
@@ -210,37 +194,31 @@ All providers default to **DEMO mode** — no paid API keys needed.
 
 ```
 kisan-direct-ai/
-├── frontend/          # React + TypeScript + Vite
+├── frontend/                 # React + TypeScript + Vite
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Route pages (47 pages)
-│   │   ├── layouts/       # Public + Dashboard layouts
-│   │   ├── services/      # API client layer
-│   │   ├── store/         # Zustand state management
-│   │   ├── types/         # TypeScript definitions
-│   │   └── utils/         # Helpers
-│   └── ...
-├── backend/           # Express.js + TypeScript
+│   │   ├── components/       # Reusable UI components
+│   │   ├── pages/            # Route pages
+│   │   ├── layouts/          # Public + Dashboard layouts
+│   │   ├── services/         # API client layer
+│   │   ├── store/            # Zustand state management
+│   │   └── ...
+├── backend/                  # Express.js + TypeScript (serves UI + API in prod)
 │   ├── src/
-│   │   ├── config/        # Environment config
-│   │   ├── controllers/   # Route handlers
-│   │   ├── middleware/     # Auth, error handling
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   ├── types/         # TypeScript types
-│   │   └── server.ts      # Entry point
-│   └── ...
-├── ai-service/        # Python FastAPI
-│   ├── app/
-│   │   ├── routes/        # ML endpoints
-│   │   └── main.py        # FastAPI app
-│   └── ...
-├── prisma/
-│   ├── schema.prisma      # Database schema (50+ models)
-│   └── seed.ts            # Comprehensive seed data
-├── docs/              # Documentation
-├── .env.example       # Environment template
-├── docker-compose.yml # Container orchestration
+│   │   ├── config/           # Environment config
+│   │   ├── controllers/      # Route handlers
+│   │   ├── middleware/       # Auth, error handling
+│   │   ├── routes/           # API routes
+│   │   ├── services/         # Business logic
+│   │   ├── utils/            # CORS, Prisma singleton, Socket.IO
+│   │   └── server.ts         # Entry point (also serves the built frontend)
+│   ├── prisma/
+│   │   ├── schema.prisma     # Single source-of-truth schema (SQLite dev)
+│   │   ├── schema.prod.prisma# Derived PostgreSQL schema (created at Docker build)
+│   │   └── seed.ts           # Demo data (guarded: only seeds an empty DB)
+│   └── scripts/prepare-postgres.mjs  # Derives the Postgres schema + client
+├── Dockerfile                # Single-service production image (Railway)
+├── railway.json              # Railway config (Docker builder + healthcheck)
+├── .env.example              # Environment template
 └── README.md
 ```
 
@@ -271,58 +249,36 @@ The application supports this complete workflow:
 
 ---
 
-## Deployment
+## Deployment (Railway — one service)
 
-### Quick Start (Local)
+The whole app — UI, API and real-time updates — deploys as **one service** from the repo root. The included `Dockerfile` builds the React app and the backend, derives the PostgreSQL Prisma schema automatically, and starts a single server.
+
+### 1. Push to GitHub
 
 ```bash
-# 1. Install dependencies
-npm install
-cd frontend && npm install && cd ../backend && npm install && cd ..
-
-# 2. Setup database
-cd backend
-npx prisma generate
-npx prisma db push
-npm run db:seed
-
-# 3. Start servers (in separate terminals)
-# Terminal 1: Backend
-npm run dev
-
-# Terminal 2: Frontend
-cd frontend && npm run dev
+git add -A && git commit -m "feat: single-service deployment"
+git push
 ```
 
-### Deploy to Vercel + Railway (Free)
+### 2. Deploy on Railway
 
-**Frontend (Vercel):**
-1. Push to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new)
-3. Import repo → Set **Root Directory** = `frontend`, **Build Command** = `npm run build`, **Output** = `dist`
-4. Deploy → Copy URL
+1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
+2. Select your repo. Railway auto-detects the root `railway.json` + `Dockerfile`.
+3. Add a **PostgreSQL** database: **+ New** → **Database** → **PostgreSQL**
+4. Attach it to the service (or copy its **Internal Connection URL**):
+   - `DATABASE_URL` = the PostgreSQL internal URL
+   - `JWT_SECRET` = a long random string
+   - `NODE_ENV` = `production`
+5. Railway builds and boots. On first boot it creates the schema and seeds demo data **only if the database is empty**.
+6. Open your service's **Settings → Networking** public URL — the app is served at `/`.
 
-**Backend (Railway):**
-1. Go to [railway.app](https://railway.app)
-2. New Project → Deploy from GitHub → Set **Root Directory** = `backend`
-3. Add PostgreSQL database (Railway provides this free)
-4. Add env vars:
-   - `DATABASE_URL` = (auto-filled from PostgreSQL plugin)
-   - `JWT_SECRET` = your-secret-key
-   - `FRONTEND_URL` = your-vercel-url
-   - `NODE_ENV` = production
-5. Deploy → Copy URL
+No other variables are required: the frontend talks to `/api` and `/socket.io` on its own origin.
 
-**Connect them:**
-Update `frontend/vercel.json` with your Railway backend URL in the rewrites section, then redeploy frontend.
-
-### Deploy with Docker
+### Deploy with plain Docker
 
 ```bash
-# Backend
-cd backend
-docker build -t kisan-backend .
-docker run -p 3001:3001 -e DATABASE_URL=postgresql://... kisan-backend
+docker build -t kisan-direct-ai .
+docker run -p 3001:3001 -e DATABASE_URL=postgresql://user:pass@host:5432/db -e JWT_SECRET=secret kisan-direct-ai
 ```
 
 ### Demo Accounts (password: demo123)

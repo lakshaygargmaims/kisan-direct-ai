@@ -133,13 +133,13 @@ export class ProductService {
         pricePerKg: data.pricePerKg,
         unit: data.unit || 'kg',
         availableQuantity: data.availableQuantity,
-        minOrderQuantity: data.minOrderQuantity || 1,
-        qualityGrade: data.qualityGrade || 'A',
-        organicCertified: data.organicCertified || false,
+        minOrderQuantity: data.minOrderQuantity ?? 1,
+        qualityGrade: data.qualityGrade ?? 'A',
+        organicCertified: data.organicCertified ?? false,
         harvestDate: data.harvestDate ? new Date(data.harvestDate) : undefined,
         shelfLife: data.shelfLife,
         storageRequirement: data.storageRequirement,
-        coldChainRequired: data.coldChainRequired || false,
+        coldChainRequired: data.coldChainRequired ?? false,
         farmerId,
         categoryId: categoryId || undefined,
         isActive: true,
@@ -148,17 +148,25 @@ export class ProductService {
       },
     });
 
-    // Create delivery rule if provided
-    if (data.deliveryRule) {
+    // Create delivery rule if provided (comes in as the validated nested `deliveryRule` shape).
+    const rule = data.deliveryRule;
+    if (rule && (
+      rule.maxDeliveryRadiusKm != null ||
+      rule.interstateAllowed != null ||
+      rule.coldChainRequired != null ||
+      rule.maximumTransitHours != null ||
+      rule.deliveryMode != null ||
+      rule.sameDayRequired != null
+    )) {
       await prisma.productDeliveryRule.create({
         data: {
           productId: product.id,
-          deliveryMode: data.deliveryRule.deliveryMode || 'PLATFORM',
-          maxDeliveryRadiusKm: data.deliveryRule.maxDeliveryRadiusKm || 50,
-          interstateAllowed: data.deliveryRule.interstateAllowed || false,
-          coldChainRequired: data.deliveryRule.coldChainRequired || false,
-          maximumTransitHours: data.deliveryRule.maximumTransitHours || 24,
-          sameDayRequired: data.deliveryRule.sameDayRequired || false,
+          deliveryMode: rule.deliveryMode || 'PLATFORM',
+          maxDeliveryRadiusKm: rule.maxDeliveryRadiusKm ?? 50,
+          interstateAllowed: rule.interstateAllowed ?? false,
+          coldChainRequired: rule.coldChainRequired ?? false,
+          maximumTransitHours: rule.maximumTransitHours ?? 24,
+          sameDayRequired: rule.sameDayRequired ?? false,
         },
       });
     }

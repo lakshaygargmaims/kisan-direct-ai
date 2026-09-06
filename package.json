@@ -4,15 +4,17 @@
   "private": true,
   "description": "KisanDirect AI - Direct Farm to Buyer Platform (SIH PS26033)",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:ai\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
-    "dev:ai": "cd ai-service && python -m uvicorn app.main:app --reload --port 8000",
     "db:migrate": "cd backend && npx prisma migrate dev",
     "db:seed": "cd backend && npx prisma db seed",
     "db:studio": "cd backend && npx prisma studio",
     "setup": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "build": "cd frontend && npm run build && cd ../backend && npm run build"
+    "build": "cd frontend && npm run build && cd ../backend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && node dist/server.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -32,6 +32,8 @@ import FarmerAnalytics from './pages/farmer/FarmerAnalytics';
 import DemandHeatmap from './pages/farmer/DemandHeatmap';
 import UpcomingHarvests from './pages/farmer/UpcomingHarvests';
 import AddHarvest from './pages/farmer/AddHarvest';
+import GlobalListings from './pages/farmer/GlobalListings';
+import AddGlobalProduct from './pages/farmer/AddGlobalProduct';
 
 // B2B Buyer pages
 import BuyerDashboard from './pages/buyer/BuyerDashboard';
@@ -58,6 +60,7 @@ import CreateRFQ from './pages/global/CreateRFQ';
 import GlobalRFQList from './pages/global/GlobalRFQList';
 import GlobalRFQDetail from './pages/global/GlobalRFQDetail';
 import GlobalTradeMap from './pages/global/GlobalTradeMap';
+import GlobalProductDetail from './pages/global/GlobalProductDetail';
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, token, isLoading } = useAuthStore();
@@ -118,6 +121,8 @@ export default function App() {
         <Route path="demand-map" element={<DemandHeatmap />} />
         <Route path="harvests" element={<UpcomingHarvests />} />
         <Route path="harvests/add" element={<AddHarvest />} />
+        <Route path="global-listings" element={<GlobalListings />} />
+        <Route path="global-listings/add" element={<AddGlobalProduct />} />
       </Route>
 
       {/* B2B Buyer */}
@@ -148,7 +153,7 @@ export default function App() {
       {/* Global Trade */}
       <Route path="/global" element={<PublicLayout />}>
         <Route path="marketplace" element={<GlobalMarketplace />} />
-        <Route path="products/:id" element={<GlobalMarketplace />} />
+        <Route path="products/:id" element={<GlobalProductDetail />} />
         <Route path="rfq/new" element={<CreateRFQ />} />
         <Route path="rfqs" element={<GlobalRFQList />} />
         <Route path="rfq/:id" element={<GlobalRFQDetail />} />

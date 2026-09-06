@@ -2,7 +2,20 @@ import { useEffect, useRef, useCallback, createContext, useContext, useState, Re
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/auth';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+// Resolve the Socket.IO server URL.
+// 1. VITE_SOCKET_URL (only needed if the API lives on a different origin than the UI)
+// 2. derive from VITE_API_URL when the frontend calls the backend directly
+// 3. default: SAME ORIGIN — in the single-service deployment the Express server
+//    serves the React app AND Socket.IO, so no cross-origin connection exists.
+function resolveSocketUrl(): string {
+  const explicit = (import.meta.env.VITE_SOCKET_URL || '').trim().replace(/\/+$/, '');
+  if (explicit) return explicit;
+  const apiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+  if (apiUrl) return apiUrl;
+  return ''; // same origin
+}
+
+const SOCKET_URL = resolveSocketUrl();
 
 // ─── Context ──────────────────────────────────────────────────────
 
@@ -27,7 +40,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token || !user) return;
 
-    const socket = io(SOCKET_URL, {
+    const socket = io(SOCKET_URL || undefined, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
