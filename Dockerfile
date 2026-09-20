@@ -42,4 +42,4 @@ EXPOSE 3001
 
 # Apply the schema (idempotent), seed demo data only when the DB is empty,
 # then boot the single server that hosts UI + API + WebSockets.
-CMD ["sh", "-c", "npx prisma db push --skip-generate --schema prisma/schema.prod.prisma && npx tsx prisma/seed.ts && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --schema prisma/schema.prod.prisma && npx tsx prisma/seed.ts && npx tsx prisma/seed-cold-storage.ts && node dist/server.js"]
