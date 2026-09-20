@@ -47,6 +47,9 @@ model User {
   aggregationSuppliers SupplyAggregationSupplier[]
   exportOffers         ExportOffer[]
   exportDocuments      ExportDocument[]
+  storageBookings      StorageBooking[]       @relation("storageBookingFarmer")
+  storedBatches        StoredBatch[]          @relation("storedBatchFarmer")
+  storagePayments      StoragePayment[]       @relation("storagePaymentFarmer")
 }
 
 model FarmerProfile {
@@ -1046,4 +1049,111 @@ model ExportDocument {
   requirement ExportDocumentRequirement @relation(fields: [requirementId], references: [id])
   rfq         ExportRFQ?                @relation(fields: [rfqId], references: [id])
   user        User?                     @relation(fields: [farmerId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// SMART COLD STORAGE MODELS
+// ═══════════════════════════════════════════
+
+model ColdStorageFacility {
+  id                 String   @id @default(cuid())
+  name               String
+  operator           String?
+  latitude           Float
+  longitude          Float
+  city               String
+  address            String?
+  capacityKg         Float
+  availableCapacityKg Float
+  storageType        String   @default("COLD_ROOM") // COLD_ROOM, CONTROLLED_ATMOSPHERE, FROZEN, AMBIENT
+  tempMinC           Float    @default(2)
+  tempMaxC           Float    @default(8)
+  supportedCrops     String   @default("[]")     // JSON array of crop names
+  pricePerKgPerDay   Float
+  minQuantityKg      Float    @default(50)
+  maxDurationDays    Int      @default(180)
+  platformFeePercent Float    @default(2)
+  depositPercent     Float    @default(10)
+  rating             Float    @default(0)
+  reviewCount        Int      @default(0)
+  isVerified         Boolean  @default(false)
+  contactPhone       String?
+  operatingHours     String?
+  rules              String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  bookings StorageBooking[]
+  batches  StoredBatch[]
+}
+
+model StorageBooking {
+  id               String   @id @default(cuid())
+  farmerId         String
+  facilityId       String
+  productName      String
+  quantityKg       Float
+  qualityGrade     String   @default("A")
+  harvestDate      DateTime?
+  startDate        DateTime
+  durationDays     Int
+  ratePerKgPerDay  Float
+  storageCost      Float
+  platformFee      Float    @default(0)
+  deposit          Float    @default(0)
+  totalAmount      Float
+  packaging        String?
+  specialReqs      String?
+  status           String   @default("PENDING_PAYMENT") // PENDING_PAYMENT, ACTIVE, COMPLETED, CANCELLED
+  paymentStatus    String   @default("PENDING")        // PENDING, PAID, REFUNDED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  farmer   User               @relation("storageBookingFarmer", fields: [farmerId], references: [id])
+  facility ColdStorageFacility @relation(fields: [facilityId], references: [id])
+  payments StoragePayment[]
+  batch    StoredBatch?
+}
+
+model StoredBatch {
+  id              String   @id @default(cuid())
+  batchCode       String   @unique
+  qrToken         String   @unique
+  farmerId        String
+  facilityId      String
+  bookingId       String   @unique
+  productName     String
+  initialQtyKg    Float
+  currentQtyKg    Float
+  qualityGrade    String   @default("A")
+  harvestDate     DateTime?
+  storedAt        DateTime @default(now())
+  expectedEndDate DateTime
+  tempRequired    String?
+  listedQtyKg     Float    @default(0)   // quantity currently listed for sale on marketplace
+  soldQtyKg       Float    @default(0)
+  status          String   @default("STORED") // STORED, PARTIALLY_LISTED, PARTIALLY_SOLD, SOLD_OUT, WITHDRAWN, RELEASE_REQUESTED
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  farmer   User                @relation("storedBatchFarmer", fields: [farmerId], references: [id])
+  facility ColdStorageFacility @relation(fields: [facilityId], references: [id])
+  booking  StorageBooking      @relation(fields: [bookingId], references: [id])
+}
+
+model StoragePayment {
+  id            String   @id @default(cuid())
+  bookingId     String
+  farmerId      String
+  amount        Float
+  type          String   // STORAGE, EXTENSION, REFUND
+  method        String   @default("DEMO_WALLET")
+  status        String   @default("COMPLETED")
+  transactionId String   @unique
+  createdAt     DateTime @default(now())
+
+  booking StorageBooking @relation(fields: [bookingId], references: [id])
+  farmer  User           @relation("storagePaymentFarmer", fields: [farmerId], references: [id])
 }

@@ -41,7 +41,8 @@
     "deliveryRules": "डिलीवरी नियम",
     "collectionHubs": "संग्रह केंद्र",
     "payments": "भुगतान",
-    "cancellationPolicy": "रद्दीकरण नीति"
+    "cancellationPolicy": "रद्दीकरण नीति",
+    "upcomingHarvests": "Upcoming Harvests"
   },
   "landing": {
     "hero": {

@@ -13,7 +13,10 @@ export const userIdParamSchema = z.object({
 });
 
 export const updateUserStatusSchema = z.object({
-  isActive: z.boolean({ required_error: 'isActive is required' }),
+  isActive: z.boolean().optional(),
+  isVerified: z.boolean().optional(),
+}).refine(data => data.isActive !== undefined || data.isVerified !== undefined, {
+  message: 'At least one of isActive or isVerified is required',
 });
 
 export const updateCancellationPolicySchema = z.object({

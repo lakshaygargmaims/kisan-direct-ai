@@ -52,3 +52,4 @@ coverage/
 test-*.js
 seed-images.mjs
 frontend/tsconfig.tsbuildinfo
+backend/backend.pid

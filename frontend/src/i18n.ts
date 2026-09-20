@@ -2,30 +2,10 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Import translation files
+// Only eagerly import English (the fallback). All other locales are loaded
+// on-demand when the user switches language, splitting them into separate
+// chunks so the initial JS payload stays small.
 import en from './locales/en.json';
-import hi from './locales/hi.json';
-import bn from './locales/bn.json';
-import te from './locales/te.json';
-import mr from './locales/mr.json';
-import ta from './locales/ta.json';
-import gu from './locales/gu.json';
-import ur from './locales/ur.json';
-import kn from './locales/kn.json';
-import or from './locales/or.json';
-import ml from './locales/ml.json';
-import pa from './locales/pa.json';
-import as from './locales/as.json';
-import mai from './locales/mai.json';
-import sat from './locales/sat.json';
-import ks from './locales/ks.json';
-import ne from './locales/ne.json';
-import kok from './locales/kok.json';
-import mni from './locales/mni.json';
-import brx from './locales/brx.json';
-import doi from './locales/doi.json';
-import sd from './locales/sd.json';
-import sa from './locales/sa.json';
 
 export const languages = [
   { code: 'en', name: 'English', nativeName: 'English', dir: 'ltr' },
@@ -53,37 +33,39 @@ export const languages = [
   { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्', dir: 'ltr' },
 ];
 
-const resources = {
-  en: { translation: en },
-  hi: { translation: hi },
-  bn: { translation: bn },
-  te: { translation: te },
-  mr: { translation: mr },
-  ta: { translation: ta },
-  gu: { translation: gu },
-  ur: { translation: ur },
-  kn: { translation: kn },
-  or: { translation: or },
-  ml: { translation: ml },
-  pa: { translation: pa },
-  as: { translation: as },
-  mai: { translation: mai },
-  sat: { translation: sat },
-  ks: { translation: ks },
-  ne: { translation: ne },
-  kok: { translation: kok },
-  mni: { translation: mni },
-  brx: { translation: brx },
-  doi: { translation: doi },
-  sd: { translation: sd },
-  sa: { translation: sa },
+// Dynamic locale loader — each import() becomes its own chunk
+const localeModules: Record<string, () => Promise<{ default: any }>> = {
+  hi: () => import('./locales/hi.json'),
+  bn: () => import('./locales/bn.json'),
+  te: () => import('./locales/te.json'),
+  mr: () => import('./locales/mr.json'),
+  ta: () => import('./locales/ta.json'),
+  gu: () => import('./locales/gu.json'),
+  ur: () => import('./locales/ur.json'),
+  kn: () => import('./locales/kn.json'),
+  or: () => import('./locales/or.json'),
+  ml: () => import('./locales/ml.json'),
+  pa: () => import('./locales/pa.json'),
+  as: () => import('./locales/as.json'),
+  mai: () => import('./locales/mai.json'),
+  sat: () => import('./locales/sat.json'),
+  ks: () => import('./locales/ks.json'),
+  ne: () => import('./locales/ne.json'),
+  kok: () => import('./locales/kok.json'),
+  mni: () => import('./locales/mni.json'),
+  brx: () => import('./locales/brx.json'),
+  doi: () => import('./locales/doi.json'),
+  sd: () => import('./locales/sd.json'),
+  sa: () => import('./locales/sa.json'),
 };
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
+    resources: {
+      en: { translation: en },
+    },
     fallbackLng: 'en',
     debug: false,
     interpolation: {
@@ -94,6 +76,32 @@ i18n
       caches: ['localStorage'],
       lookupLocalStorage: 'kisandirect-language',
     },
+    // Lazy-load non-English locales on demand
+    backend: {
+      loadPath: '', // not used — we use the custom loader below
+    },
   });
+
+// Custom i18next backend plugin for lazy-loading locale chunks
+i18n.on('languageChanged', async (lng: string) => {
+  if (lng === 'en') return;
+  if (i18n.hasResourceBundle(lng, 'translation')) return;
+  const loader = localeModules[lng];
+  if (!loader) return;
+  try {
+    const mod = await loader();
+    i18n.addResourceBundle(lng, 'translation', mod.default, true, true);
+  } catch {
+    // Locale file missing — fallback to English (handled by i18next)
+  }
+});
+
+// Pre-load the detected language if it's not English
+const detected = i18n.language?.split('-')[0];
+if (detected && detected !== 'en' && localeModules[detected]) {
+  localeModules[detected]().then((mod) => {
+    i18n.addResourceBundle(detected, 'translation', mod.default, true, true);
+  }).catch(() => {});
+}
 
 export default i18n;

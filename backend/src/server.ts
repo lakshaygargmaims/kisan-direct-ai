@@ -17,6 +17,8 @@ import demandRoutes from './routes/demand.routes';
 import harvestRoutes from './routes/harvest.routes';
 import aiRoutes from './routes/ai.routes';
 import globalTradeRoutes from './routes/global-trade.routes';
+import mandiRoutes from './routes/mandi.routes';
+import coldStorageRoutes from './routes/cold-storage.routes';
 import { seedDemoAccounts } from './services/auth.service';
 import { initSocket } from './utils/socket';
 
@@ -59,6 +61,8 @@ app.use('/api/demand', demandRoutes);
 app.use('/api/harvests', harvestRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/global', globalTradeRoutes);
+app.use('/api/mandi', mandiRoutes);
+app.use('/api/cold-storage', coldStorageRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

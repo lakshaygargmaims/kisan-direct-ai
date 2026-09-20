@@ -2,70 +2,18 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { useSocketContext } from '../hooks/useSocket';
 import {
-  Sprout, LayoutDashboard, ShoppingCart, Package, Map, Bell, LogOut, Menu, X,
-  BarChart3, Users, AlertTriangle, Settings, Truck, MapPin, DollarSign,
-  ClipboardList, TrendingUp, Target, Search, ChevronDown, Globe, FileText
+  Sprout, Bell, LogOut, Menu, X, Search, ChevronRight, Home
 } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../components/LanguageSelector';
 import { useNotifications, useMarkNotificationRead } from '../hooks/queries';
+import CommandPalette from '../components/CommandPalette';
+import Breadcrumbs from '../components/Breadcrumbs';
+import PageLoader from '../components/PageLoader';
+import { getNavEntriesForRole, UserRole, NavEntry } from '../lib/navigation';
 
-const NAV_ITEMS_RAW: Record<string, { labelKey: string; path: string; icon: any }[]> = {
-  CONSUMER: [
-    { labelKey: 'nav.dashboard', path: '/consumer/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.marketplace', path: '/consumer/marketplace', icon: ShoppingCart },
-    { labelKey: 'nav.map', path: '/consumer/farmers-map', icon: Map },
-    { labelKey: 'nav.upcomingHarvests', path: '/consumer/upcoming-harvests', icon: Sprout },
-    { labelKey: 'nav.orders', path: '/consumer/orders', icon: Package },
-    { labelKey: 'nav.cart', path: '/consumer/cart', icon: ShoppingCart },
-    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
-  ],
-  FARMER: [
-    { labelKey: 'nav.dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.products', path: '/farmer/products', icon: Package },
-    { labelKey: 'farmer.products.addProduct', path: '/farmer/products/add', icon: Target },
-    { labelKey: 'nav.orders', path: '/farmer/orders', icon: ClipboardList },
-    { labelKey: 'nav.clubbing', path: '/farmer/clubbing', icon: TrendingUp },
-    { labelKey: 'nav.priceAdvisor', path: '/farmer/price-advisor', icon: DollarSign },
-    { labelKey: 'nav.analytics', path: '/farmer/analytics', icon: BarChart3 },
-    { labelKey: 'nav.demandMap', path: '/farmer/demand-map', icon: Map },
-    { labelKey: 'nav.upcomingHarvests', path: '/farmer/harvests', icon: Sprout },
-    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
-    { labelKey: 'nav.globalListings', path: '/farmer/global-listings', icon: FileText },
-  ],
-  FPO: [
-    { labelKey: 'nav.dashboard', path: '/farmer/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.products', path: '/farmer/products', icon: Package },
-    { labelKey: 'farmer.products.addProduct', path: '/farmer/products/add', icon: Target },
-    { labelKey: 'nav.orders', path: '/farmer/orders', icon: ClipboardList },
-    { labelKey: 'nav.clubbing', path: '/farmer/clubbing', icon: TrendingUp },
-    { labelKey: 'nav.analytics', path: '/farmer/analytics', icon: BarChart3 },
-    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
-    { labelKey: 'nav.globalListings', path: '/farmer/global-listings', icon: FileText },
-  ],
-  B2B_BUYER: [
-    { labelKey: 'nav.dashboard', path: '/buyer/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.requirements', path: '/buyer/requirement', icon: ClipboardList },
-    { labelKey: 'nav.orders', path: '/buyer/orders', icon: Package },
-  ],
-  LOGISTICS: [
-    { labelKey: 'nav.dashboard', path: '/logistics/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.deliveryRequests', path: '/logistics/requests', icon: Truck },
-    { labelKey: 'nav.activeRoute', path: '/logistics/active-route', icon: MapPin },
-  ],
-  ADMIN: [
-    { labelKey: 'nav.dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { labelKey: 'nav.users', path: '/admin/users', icon: Users },
-    { labelKey: 'nav.orders', path: '/admin/orders', icon: Package },
-    { labelKey: 'nav.deliveryRules', path: '/admin/delivery-rules', icon: Settings },
-    { labelKey: 'nav.disputes', path: '/admin/disputes', icon: AlertTriangle },
-    { labelKey: 'nav.analytics', path: '/admin/analytics', icon: BarChart3 },
-    { labelKey: 'nav.map', path: '/admin/supply-demand', icon: Map },
-    { labelKey: 'nav.globalTrade', path: '/global/marketplace', icon: Globe },
-    { labelKey: 'nav.globalRFQs', path: '/global/rfqs', icon: FileText },
-  ],
-};
+
 
 export default function DashboardLayout() {
   const { user, logout } = useAuthStore();
@@ -89,7 +37,7 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const navItemsRaw = NAV_ITEMS_RAW[user?.role || 'CONSUMER'] || [];
+  const navItemsRaw: NavEntry[] = getNavEntriesForRole((user?.role || 'CONSUMER') as UserRole);
 
   const handleLogout = () => {
     logout();
@@ -98,6 +46,8 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      <CommandPalette />
+      <PageLoader />
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-full z-30">
         <div className="p-4 border-b">
@@ -181,11 +131,12 @@ export default function DashboardLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3 flex-1 max-w-md mx-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input type="text" placeholder={t('common.search') + '...'}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-            </div>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+              className="relative w-full flex items-center gap-2 px-4 py-2 bg-gray-50 border rounded-lg text-sm text-gray-400 hover:bg-gray-100 transition cursor-pointer">
+              <Search className="h-4 w-4" />
+              <span className="flex-1 text-left">{t('common.search') + '...'} </span>
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] bg-white border rounded">⌘K</kbd>
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <LanguageSelector />
@@ -251,6 +202,7 @@ export default function DashboardLayout() {
         </header>
 
         <main className="p-4 sm:p-6">
+          <Breadcrumbs />
           <Outlet />
         </main>
       </div>

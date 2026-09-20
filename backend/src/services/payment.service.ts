@@ -9,6 +9,15 @@ export class PaymentService {
     });
     if (!order) throw new Error('Order not found');
     if (order.buyerId !== userId) throw new Error('Unauthorized');
+    // Server-side money rule: the payment must equal the order's computed
+    // advance. Never trust a client-supplied amount for financial records.
+    const expected = Number(order.advanceAmount);
+    if (!Number.isFinite(amount) || Math.abs(amount - expected) > 0.01) {
+      throw new Error(`Payment amount must equal the advance of ₹${expected.toFixed(2)}`);
+    }
+    if (order.status !== 'PENDING_ADVANCE') {
+      throw new Error(`Advance already settled for this order (status: ${order.status})`);
+    }
 
     const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
 

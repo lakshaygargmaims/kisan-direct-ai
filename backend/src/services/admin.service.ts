@@ -99,10 +99,13 @@ export class AdminService {
     return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async updateUserStatus(userId: string, isActive: boolean) {
+  async updateUserStatus(userId: string, data: { isActive?: boolean; isVerified?: boolean }) {
+    const updateData: any = {};
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.isVerified !== undefined) updateData.isVerified = data.isVerified;
     return prisma.user.update({
       where: { id: userId },
-      data: { isActive },
+      data: updateData,
     });
   }
 

@@ -36,7 +36,7 @@ export class AdminController {
 
   async updateUserStatus(req: AuthRequest, res: Response) {
     try {
-      const user = await adminService.updateUserStatus(req.params.id, req.body.isActive);
+      const user = await adminService.updateUserStatus(req.params.id, req.body);
       res.json({ success: true, data: user });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });

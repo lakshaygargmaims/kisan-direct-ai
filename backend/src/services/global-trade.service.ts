@@ -173,10 +173,32 @@ export class GlobalTradeService {
   }
 
   async upsertBuyerProfile(userId: string, data: any) {
+    const validFields = {
+      companyName: data.companyName,
+      country: data.country,
+      city: data.city,
+      portOrAirport: data.portOrAirport,
+      buyerType: data.buyerType,
+      importLicense: data.importLicense,
+      tradeExperience: data.tradeExperience,
+      preferredProducts: data.preferredProducts,
+      annualVolume: data.annualVolume,
+      verificationStatus: data.verificationStatus,
+    };
+    // Remove undefined values so Prisma defaults work
+    const cleaned = Object.fromEntries(
+      Object.entries(validFields).filter(([_, v]) => v !== undefined)
+    );
+    // Ensure required fields always have values for upsert create
+    const createData = {
+      companyName: cleaned.companyName || 'Global Buyer',
+      country: cleaned.country || 'Unknown',
+      ...cleaned,
+    };
     return prisma.globalBuyerProfile.upsert({
       where: { userId },
-      create: { userId, ...data },
-      update: data,
+      create: { userId, ...createData },
+      update: cleaned,
     });
   }
 
@@ -216,8 +238,15 @@ export class GlobalTradeService {
   }
 
   async createGlobalProduct(data: any, userId: string) {
+    const { origin, description, minimumOrderQuantity, ...rest } = data;
     return prisma.globalProductListing.create({
-      data: { ...data, farmerId: userId },
+      data: {
+        ...rest,
+        moq: rest.moq ?? minimumOrderQuantity ?? 1,
+        originState: rest.originState || origin || 'India',
+        description: description || rest.productName + ' - Export listing',
+        farmerId: userId,
+      },
     });
   }
 

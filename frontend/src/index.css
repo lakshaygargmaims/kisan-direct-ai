@@ -35,8 +35,48 @@
   }
 }
 
+/* ─── MapLibre GL map canvas fixes ──────────────────────────
+   These rules ensure the map container renders at the right size,
+   the HTML markers and popups receive pointer events, and the
+   canvas layer does not block marker clicks on any device.
+   ──────────────────────────────────────────────────────────── */
+.maplibregl-map {
+  position: relative;
+}
+
+.maplibregl-map > div {
+  /* MapLibre creates several child divs; ensure the container fills. */
+  position: absolute !important;
+  inset: 0;
+}
+
+.maplibregl-canvas {
+  touch-action: none; /* prevents browser scroll/zoom from hijacking map gestures */
+  pointer-events: auto;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Markers created with new maplibregl.Marker({ element }) are position:absolute
+   inside .maplibregl-map; the default anchor behavior is correct as long as the
+   element itself does not set pointer-events: none. */
+.maplibregl-marker {
+  pointer-events: auto;
+}
+
 .maplibregl-popup-content {
   @apply rounded-lg shadow-lg p-3 text-sm;
+  pointer-events: auto;
+  max-width: 260px;
+}
+
+.maplibregl-popup-close-button {
+  font-size: 16px;
+  padding: 4px 8px;
+  color: #666;
+  cursor: pointer;
 }
 
 /* Custom scrollbar */

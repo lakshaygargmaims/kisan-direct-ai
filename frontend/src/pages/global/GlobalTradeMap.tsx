@@ -47,6 +47,7 @@ export default function GlobalTradeMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [legendOpen, setLegendOpen] = useState(true);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -121,13 +122,21 @@ export default function GlobalTradeMap() {
           paint: { 'line-color': color, 'line-width': 2, 'line-opacity': 0.6 },
         });
 
-        // Route label at midpoint
+        // Route label at midpoint — use a light non-blocking marker so the map
+        // underneath stays interactive; clicking the label still selects the route.
         const el = document.createElement('div');
-        el.innerHTML = `<div style="background:${color};color:white;padding:2px 6px;border-radius:8px;font-size:9px;white-space:nowrap;font-family:sans-serif;cursor:pointer;">${route.product}</div>`;
-        el.onclick = () => setSelectedRoute(route);
-        new maplibregl.Marker({ element: el })
+        el.style.cssText = `
+          background: ${color}; color: white; padding: 2px 6px; border-radius: 8px;
+          font-size: 9px; white-space: nowrap; font-family: sans-serif; cursor: pointer;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3); user-select: none;
+        `;
+        el.textContent = route.product;
+        el.title = `${route.product} (${route.qty})`;
+        const label = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat(coords[1])
           .addTo(map);
+        el.addEventListener('click', (e) => { e.stopPropagation(); setSelectedRoute(route); });
+        markersRef.current.push(label);
       });
     });
 

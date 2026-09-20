@@ -40,7 +40,9 @@
     "deliveryRules": "Delivery Rules",
     "collectionHubs": "Collection Hubs",
     "payments": "Payments",
-    "cancellationPolicy": "Cancellation Policy"
+    "cancellationPolicy": "Cancellation Policy",
+    "demandMap": "AI Demand Map",
+    "upcomingHarvests": "Upcoming Harvests"
   },
   "landing": {
     "hero": {
@@ -239,7 +241,9 @@
     "today": "Today",
     "week": "This Week",
     "month": "This Month",
-    "year": "This Year"
+    "year": "This Year",
+    "newest": "Newest",
+    "resolve": "Resolve"
   },
   "consumer": {
     "dashboard": {
@@ -366,7 +370,9 @@
         "avgPrice": "Avg Price",
         "logisticsSaved": "Logistics Saved",
         "repeatBuyers": "Repeat Buyers"
-      }
+      },
+      "demandNearYou": "Demand Near You",
+      "viewDemandMap": "View Demand Map"
     },
     "products": {
       "title": "My Products",

@@ -4,7 +4,7 @@ import { useOrders } from '../../hooks/queries';
 import { useSocketEvent } from '../../hooks/useSocket';
 import { useAuthStore } from '../../store/auth';
 import { useTranslation } from 'react-i18next';import { TrendingUp, Package, DollarSign, ShoppingCart, Users, BarChart3,
-  Zap, Truck, Star, Clock, Target, MapPin
+  Zap, Truck, Star, Clock, Target, MapPin, Snowflake
 } from 'lucide-react';
 import DemandNearYou from '../../components/DemandNearYou';
 
@@ -118,8 +118,8 @@ export default function FarmerDashboard() {
             <h3 className="font-semibold mb-3">{t('farmer.dashboard.quickActions')}</h3>
             <div className="space-y-2">
               {[
-                { label: t('farmer.products.addProduct'), path: '/farmer/products/add', icon: Target, color: 'text-green-600' },
-                { label: 'Demand Map', path: '/farmer/demand-map', icon: MapPin, color: 'text-red-600' },
+                { label: t('farmer.products.addProduct'), path: '/farmer/products/add', icon: Target, color: 'text-green-600' },                 { label: 'Demand Map', path: '/farmer/demand-map', icon: MapPin, color: 'text-red-600' },
+                 { label: '🧊 Cold Storage', path: '/farmer/cold-storage', icon: Snowflake, color: 'text-cyan-600' },
                 { label: t('nav.clubbing'), path: '/farmer/clubbing', icon: TrendingUp, color: 'text-purple-600' },
                 { label: t('nav.priceAdvisor'), path: '/farmer/price-advisor', icon: DollarSign, color: 'text-blue-600' },
                 { label: t('farmer.products.title'), path: '/farmer/products', icon: Package, color: 'text-amber-600' },

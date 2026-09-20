@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, Minus, Zap, BarChart3 } from 'lucide-react';
+import { MandiPriceCard } from '../../components/shared/MandiPriceCard';
 
 const PRODUCTS = [
   { name: 'Tomato', fair: 28, market: { low: 24, high: 32 }, trend: 'UPWARD', change: 8.5, demand: 'HIGH' },
@@ -106,6 +107,9 @@ export default function PriceAdvisor() {
               </div>
             </div>
           </div>
+
+          {/* Real APMC Mandi Prices */}
+          <MandiPriceCard productName={product.name} kisanDirectPrice={product.fair} />
         </div>
 
         {/* Demand Forecast */}

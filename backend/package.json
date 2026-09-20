@@ -10,7 +10,10 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "db:sqlite": "node scripts/migrate.js sqlite",
+    "db:postgres": "node scripts/migrate.js postgres",
+    "db:reset": "node scripts/migrate.js reset"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

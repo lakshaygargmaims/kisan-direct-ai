@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 import { Star, MapPin, Truck, Shield, Clock, Leaf, ArrowLeft, ShoppingCart } from 'lucide-react';
+import { MandiPriceCard } from '../../components/shared/MandiPriceCard';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -167,6 +168,9 @@ export default function ProductDetails() {
         </div>
         <p className="text-xs text-green-600 mt-3">{t('payment.demoMode')}</p>
       </div>
+
+      {/* APMC Mandi Price Comparison */}
+      <MandiPriceCard productName={product.name} kisanDirectPrice={product.pricePerKg} />
     </div>
   );
 }
