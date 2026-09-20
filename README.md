@@ -6,6 +6,18 @@
 
 ---
 
+## 📚 Full Documentation
+
+Complete project documentation (generated from the codebase audit, September 2026):
+
+| Document | Contents |
+|---|---|
+| [docs/01-PROJECT-DOCUMENTATION.md](docs/01-PROJECT-DOCUMENTATION.md) | Executive summary, problem/solution, requirements, architecture diagrams, ER model, DFDs, UML, user flows, metrics |
+| [docs/02-TECHNICAL-REFERENCE.md](docs/02-TECHNICAL-REFERENCE.md) | API reference, database reference, security audit, AI architecture, deployment & Docker, installation guide, environment variables |
+| [docs/03-EVALUATION-AND-ANNEXURE.md](docs/03-EVALUATION-AND-ANNEXURE.md) | Testing, performance, code-quality audit, risks, roadmap, 110 viva questions, SIH judge Q&A, glossary, references |
+
+---
+
 ## Problem Statement
 
 Multiple intermediaries between farmers and consumers reduce farmer earnings by 30-40% and increase consumer prices by 50-80%. Farmers lack direct market access, fair pricing, and efficient logistics.
